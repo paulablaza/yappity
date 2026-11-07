@@ -27,7 +27,7 @@ namespace Yappity
         public static readonly Choice[] Outputs =
         {
             new Choice("type", "Type it in",
-                "Yappity types the text into the app you're using, the same way your keyboard would. Your clipboard is never touched, and every yap still gets saved in History."),
+                "Yappity types the text into the app you're using, the same way your keyboard would. Really long yaps get pasted instead so no words get lost, and your clipboard is put back right after. Every yap still gets saved in History."),
             new Choice("paste", "Paste it",
                 "Yappity pastes the text with Ctrl+V and then puts back whatever you had copied before. It's a bit faster for really long yaps, but a few apps don't handle it well."),
             new Choice("history", "History only",

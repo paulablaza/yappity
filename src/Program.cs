@@ -34,6 +34,35 @@ namespace Yappity
                 File.WriteAllText(args[2], sb.ToString(), Encoding.UTF8);
                 return 0;
             }
+            if (args.Length >= 3 && args[0] == "--type-test")
+            {
+                // Opens a text box, delivers the file's text into it like a real yap, and
+                // reports whether every character arrived.
+                string expected = File.ReadAllText(args[1], Encoding.UTF8).Trim();
+                var form = new Form { Width = 900, Height = 600, Text = "Yappity type test", TopMost = true };
+                var box = new TextBox { Multiline = true, Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical };
+                form.Controls.Add(box);
+                string report = "";
+                form.Shown += async delegate
+                {
+                    form.Activate();
+                    box.Focus();
+                    await System.Threading.Tasks.Task.Delay(400);
+                    Clipboard.SetText("clipboard before the test");
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    var result = await Paster.Deliver(expected, "type");
+                    await System.Threading.Tasks.Task.Delay(1500);
+                    string got = box.Text.Replace("\r\n", "\n").Trim();
+                    string want = expected.Replace("\r\n", " ").Replace('\n', ' ');
+                    report = "result=" + result + " chars expected=" + want.Length + " got=" + got.Length +
+                        " match=" + (got == want || got == expected) + " ms=" + sw.ElapsedMilliseconds +
+                        " clipboard restored=" + (Clipboard.GetText() == "clipboard before the test");
+                    form.Close();
+                };
+                Application.Run(form);
+                File.WriteAllText(args[2], report);
+                return 0;
+            }
             if (args.Length >= 2 && args[0] == "--tray-icons")
             {
                 // Saves the idle, recording and working tray icons side by side.

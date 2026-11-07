@@ -24,16 +24,22 @@ namespace Yappity
 
             await WaitForModifiersReleased();
 
-            if (mode == "paste") return await PasteWithClipboard(text) ? OutputResult.Pasted : OutputResult.Failed;
+            // Long text gets pasted even in "type" mode. Typing thousands of characters can
+            // overrun a busy app (terminals especially) and it silently drops a chunk from the
+            // middle. A paste always lands in one piece, and the clipboard is put back after.
+            if (mode == "paste" || text.Length > TypeLimit)
+                return await PasteWithClipboard(text) ? OutputResult.Pasted : OutputResult.Failed;
             return await Type(text) ? OutputResult.Typed : OutputResult.Failed;
         }
 
-        // Sends the text as Unicode key presses, a chunk at a time so slow apps keep up.
+        public const int TypeLimit = 400;
+
+        // Sends the text as Unicode key presses, a small chunk at a time so slow apps keep up.
         static async Task<bool> Type(string text)
         {
             string clean = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ');
             int size = Marshal.SizeOf(typeof(Native.INPUT));
-            const int chunk = 48;
+            const int chunk = 24;
             for (int start = 0; start < clean.Length; start += chunk)
             {
                 int end = Math.Min(clean.Length, start + chunk);
@@ -45,7 +51,7 @@ namespace Yappity
                 }
                 uint sent = Native.SendInput((uint)inputs.Count, inputs.ToArray(), size);
                 if (sent != inputs.Count) return false;
-                if (end < clean.Length) await Task.Delay(8);
+                if (end < clean.Length) await Task.Delay(15);
             }
             return true;
         }

@@ -64,7 +64,7 @@ sentences, never answers a question you dictate, never translates, and never use
 - **Fast.** Usually about a second from when you stop talking to when the text shows up.
 - **Tiny.** One `.exe` under 1 MB. Nothing to install, it uses the .NET that comes with Windows.
 - **Light.** About 2 MB of memory in Task Manager while it waits in your tray.
-- **Types like a keyboard.** Your clipboard is never touched. Paste mode is there if you want it.
+- **Types like a keyboard.** Short yaps get typed in, long ones get pasted so not a single word gets dropped, and your clipboard is put back right after.
 - **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
 - **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
 - **Your shortcut, your way.** <kbd>Right Ctrl</kbd> by default. Tap it to start and stop, or switch to Hold mode and hold it while you talk. Pick another one from the presets or record any keys you want. <kbd>Esc</kbd> cancels.

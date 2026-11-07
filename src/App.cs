@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -12,7 +12,7 @@ namespace Yappity
     // hold key -> record -> Whisper -> optional cleanup -> paste -> history.
     internal sealed class App
     {
-        public const string Version = "0.1.0";
+        public const string Version = "0.1.1";
         const double MinSeconds = 0.35;
         const int MaxSeconds = 30 * 60;
         const int ChunkSeconds = 10 * 60; // Groq takes up to 25 MB per file, about 13 minutes of WAV
@@ -174,7 +174,7 @@ namespace Yappity
 
         void UpdateTrayText()
         {
-            string t = "Yappity · " + (Settings.HoldMode ? "hold " : "press ") + ShortcutName;
+            string t = "Yappity Â· " + (Settings.HoldMode ? "hold " : "press ") + ShortcutName;
             tray.Text = t.Length > 63 ? t.Substring(0, 63) : t;
         }
 
