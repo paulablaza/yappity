@@ -31,8 +31,8 @@ about 1 MB of memory.
   <img src="docs/bubble-done.png" height="64" alt="Bubble when done">
 </p>
 
-1. Press **Ctrl + Shift + K** anywhere and start talking. A little bubble with Chatter-Chan shows up
-   at the top of your screen with your voice level and a timer.
+1. Press **Ctrl + Shift + K** anywhere and start talking. A little bubble shows up at the top of your
+   screen with your voice level, a timer, and Chatter-Chan yapping along with you.
 2. Press **Ctrl + Shift + K** again when you're done. Press **Esc** instead if you want to throw it away.
 3. **Whisper Large v3** turns your voice into text, usually in about a second.
 4. **Qwen 3.8 27B** tidies it up. It takes out the um, uh, you know, repeated words and false starts,
@@ -126,8 +126,10 @@ only your Windows account can read it. History stays on your PC in `%APPDATA%\Ya
   <img src="design/mascots/chatter-chan/all-poses.png" width="760" alt="Chatter-Chan's 8 poses">
 </p>
 
-She's the one waving at you on first launch, holding the mic when your history is empty, and
-reacting in the bubble while you talk.
+She's everywhere in Yappity. She's the app icon and the tray icon, she waves at you on first launch,
+and she holds the mic out when your history is empty. In the bubble she moves her mouth along with
+your voice while you talk, sweeps while the text gets cleaned up, and jumps with a thumbs up when
+it's done.
 
 ---
 
@@ -151,7 +153,8 @@ That gives you `bin\Yappity.exe`.
 | `src/Bubble.cs` | The floating bubble |
 | `src/MainWindow.cs`, `src/Kit.cs` | History and Settings window (WPF) |
 | `src/Store.cs` | Settings, history and logs |
-| `tools/` | Scripts that make the mascot images and the GIF |
+| `tools/make-art.py` | Makes the icon, tray icon and every Chatter-Chan image the app uses |
+| `tools/make-gif.ps1` | Turns a 4-frame sprite sheet into the README GIF |
 
 Commands for testing without a mic or hotkey:
 

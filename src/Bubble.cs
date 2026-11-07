@@ -10,9 +10,9 @@ using System.Windows.Threading;
 
 namespace Yappity
 {
-    // The floating pill with Chatter-Chan's face: "Yap away" with live voice bars,
-    // then "Writing it down", then a short result. It never takes focus and clicks
-    // pass straight through it.
+    // The floating pill with Chatter-Chan standing at its edge. While you talk she
+    // moves her mouth with your voice; then she writes, tidies up, and gives a
+    // thumbs up. The bubble never takes focus and clicks pass straight through it.
     internal sealed class Bubble : Window
     {
         enum Mode { Hidden, Listening, Working, Message }
@@ -26,23 +26,27 @@ namespace Yappity
         public string Position = "top";
 
         const int Bars = 14;
+        const double FigureHeight = 70;
         readonly Rectangle[] bars = new Rectangle[Bars];
         readonly double[] targets = new double[Bars];
         readonly double[] heights = new double[Bars];
         int barPos;
+        double voice;      // smoothed loudness, drives her mouth
+        int talkFrame = -1;
 
         readonly Border pill = new Border();
         readonly ScaleTransform pillScale = new ScaleTransform(1, 1);
-        readonly Ellipse face = new Ellipse { Width = 32, Height = 32 };
-        readonly ScaleTransform faceScale = new ScaleTransform(1, 1);
-        readonly Grid badge = new Grid { Width = 14, Height = 14, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, -2, -2) };
+        readonly Image figure = new Image { Height = FigureHeight, VerticalAlignment = VerticalAlignment.Bottom };
+        readonly TranslateTransform figureMove = new TranslateTransform();
+        readonly ScaleTransform figureScale = new ScaleTransform(1, 1);
+        readonly Grid status = new Grid { Width = 18, Height = 18, Margin = new Thickness(0, 0, 9, 0), VerticalAlignment = VerticalAlignment.Center };
         readonly StackPanel barPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 12, 0), Height = 22, VerticalAlignment = VerticalAlignment.Center };
         readonly StackPanel dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
         readonly TextBlock label = new TextBlock();
         readonly DispatcherTimer frame = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
         readonly DispatcherTimer hideTimer = new DispatcherTimer();
         Mode mode = Mode.Hidden;
-        string currentFace;
+        string pose;
         DateTime since;
         double tick;
 
@@ -60,23 +64,24 @@ namespace Yappity
 
             pill.CornerRadius = new CornerRadius(25);
             pill.Height = 50;
-            pill.Padding = new Thickness(9, 0, 20, 0);
+            pill.Padding = new Thickness(6, 0, 20, 0);
             pill.Background = new SolidColorBrush(Color.FromArgb(242, 22, 22, 26));
             pill.BorderBrush = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255));
             pill.BorderThickness = new Thickness(1);
             pill.Effect = K.Shadow(26, 0.45);
-            pill.Margin = new Thickness(26, 14, 26, 32); // room for the shadow
+            // Room above for her head poking out, and around for the shadow.
+            pill.Margin = new Thickness(26, 34, 26, 32);
             pill.RenderTransform = pillScale;
             pill.RenderTransformOrigin = new Point(0.5, 0.5);
 
-            var avatar = new Grid { Width = 32, Height = 32, Margin = new Thickness(0, 0, 11, 0), VerticalAlignment = VerticalAlignment.Center };
-            face.Fill = new SolidColorBrush(Color.FromRgb(60, 50, 120));
-            face.Stroke = new SolidColorBrush(Color.FromArgb(60, 255, 255, 255));
-            face.StrokeThickness = 1;
-            avatar.Children.Add(face);
-            avatar.Children.Add(badge);
-            avatar.RenderTransform = faceScale;
-            avatar.RenderTransformOrigin = new Point(0.5, 0.5);
+            // She stands on the bottom edge of the pill and pokes out above it.
+            var tg = new TransformGroup();
+            tg.Children.Add(figureScale);
+            tg.Children.Add(figureMove);
+            figure.RenderTransform = tg;
+            figure.RenderTransformOrigin = new Point(0.5, 1);
+            figure.Margin = new Thickness(0, -(FigureHeight - 46), 6, 2);
+            RenderOptions.SetBitmapScalingMode(figure, BitmapScalingMode.HighQuality);
 
             for (int i = 0; i < Bars; i++)
             {
@@ -93,8 +98,9 @@ namespace Yappity
             label.VerticalAlignment = VerticalAlignment.Center;
             TextOptions.SetTextFormattingMode(label, TextFormattingMode.Display);
 
-            var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            row.Children.Add(avatar);
+            var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Stretch };
+            row.Children.Add(figure);
+            row.Children.Add(status);
             row.Children.Add(barPanel);
             row.Children.Add(dots);
             row.Children.Add(label);
@@ -121,9 +127,14 @@ namespace Yappity
         {
             mode = Mode.Listening;
             since = DateTime.UtcNow;
+            figureMove.BeginAnimation(TranslateTransform.XProperty, null);
+            figureMove.BeginAnimation(TranslateTransform.YProperty, null);
+            figureMove.X = figureMove.Y = 0;
+            voice = 0;
+            talkFrame = -1;
             for (int i = 0; i < Bars; i++) { targets[i] = 0; heights[i] = 3; }
-            SetFace("yapping");
-            SetBadge(Red, false);
+            SetPose("talk-0");
+            SetStatus(Red, false);
             barPanel.Visibility = Visibility.Visible;
             dots.Visibility = Visibility.Collapsed;
             label.Text = "Yap away  0:00";
@@ -134,8 +145,9 @@ namespace Yappity
         {
             bool wasWorking = mode == Mode.Working;
             mode = Mode.Working;
-            SetFace(text.StartsWith("Tidying") ? "tidying" : "writing");
-            SetBadge(Colors.Transparent, false);
+            figureMove.BeginAnimation(TranslateTransform.YProperty, null);
+            SetPose(text.StartsWith("Tidying") ? "tidying" : "writing");
+            SetStatus(Colors.Transparent, false);
             barPanel.Visibility = Visibility.Collapsed;
             dots.Visibility = Visibility.Visible;
             label.Text = text;
@@ -148,9 +160,11 @@ namespace Yappity
             barPanel.Visibility = Visibility.Collapsed;
             dots.Visibility = Visibility.Collapsed;
             label.Text = text;
-            SetFace(color == Green ? "done" : color == Amber ? "oops" : "idle");
-            SetBadge(color == Green ? Green : Colors.Transparent, color == Green);
+            SetPose(color == Green ? "done" : color == Amber ? "oops" : "idle");
+            SetStatus(color, color == Green);
             Present(ms);
+            if (color == Green) Hop();
+            else if (color == Amber) Wobble();
         }
 
         // Safe to call from the recorder thread.
@@ -160,6 +174,7 @@ namespace Yappity
             {
                 targets[barPos] = level;
                 barPos = (barPos + 1) % Bars;
+                voice = Math.Max(level, voice * 0.6);
             });
         }
 
@@ -175,30 +190,64 @@ namespace Yappity
             K.To(pillScale, ScaleTransform.ScaleYProperty, 0.92, 180, K.Out);
         }
 
-        void SetFace(string name)
+        void SetPose(string name)
         {
-            if (name == currentFace) return;
-            currentFace = name;
-            var img = K.Image("face-" + name + ".png");
-            if (img != null) face.Fill = new ImageBrush(img) { Stretch = Stretch.UniformToFill };
-            // A small bounce whenever her face changes.
-            faceScale.ScaleX = faceScale.ScaleY = 0.75;
+            if (name == pose) return;
+            bool talking = name.StartsWith("talk-") && pose != null && pose.StartsWith("talk-");
+            pose = name;
+            var img = K.Image(name + ".png");
+            if (img != null) figure.Source = img;
+            if (talking) return; // mouth frames swap instantly
+            // A little pop whenever she changes pose.
+            figureScale.ScaleX = figureScale.ScaleY = 0.82;
             var ease = new BackEase { Amplitude = 0.6, EasingMode = EasingMode.EaseOut };
-            K.To(faceScale, ScaleTransform.ScaleXProperty, 1, 360, ease);
-            K.To(faceScale, ScaleTransform.ScaleYProperty, 1, 360, ease);
+            K.To(figureScale, ScaleTransform.ScaleXProperty, 1, 380, ease);
+            K.To(figureScale, ScaleTransform.ScaleYProperty, 1, 380, ease);
         }
 
-        void SetBadge(Color color, bool check)
+        void SetStatus(Color color, bool check)
         {
-            badge.Children.Clear();
+            status.Children.Clear();
+            status.Visibility = color.A == 0 ? Visibility.Collapsed : Visibility.Visible;
             if (color.A == 0) return;
-            badge.Children.Add(new Ellipse { Fill = new SolidColorBrush(color), Stroke = new SolidColorBrush(Color.FromRgb(22, 22, 26)), StrokeThickness = 2 });
             if (check)
             {
-                var c = K.Check(Color.FromRgb(16, 24, 20), 7);
+                status.Children.Add(new Ellipse { Fill = new SolidColorBrush(color) });
+                var c = K.Check(Color.FromRgb(16, 24, 20), 8);
                 c.HorizontalAlignment = HorizontalAlignment.Center;
-                badge.Children.Add(c);
+                status.Children.Add(c);
+                var s = new ScaleTransform(0.3, 0.3);
+                status.RenderTransform = s;
+                status.RenderTransformOrigin = new Point(0.5, 0.5);
+                var ease = new BackEase { Amplitude = 0.7, EasingMode = EasingMode.EaseOut };
+                K.To(s, ScaleTransform.ScaleXProperty, 1, 380, ease);
+                K.To(s, ScaleTransform.ScaleYProperty, 1, 380, ease);
             }
+            else
+            {
+                status.RenderTransform = null;
+                status.Children.Add(new Ellipse { Width = 10, Height = 10, Fill = new SolidColorBrush(color) });
+            }
+        }
+
+        // Done: a quick happy jump.
+        void Hop()
+        {
+            var a = new DoubleAnimationUsingKeyFrames();
+            a.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            a.KeyFrames.Add(new EasingDoubleKeyFrame(-9, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(170)), new QuadraticEase { EasingMode = EasingMode.EaseOut }));
+            a.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(360)), new BounceEase { Bounces = 1, Bounciness = 3, EasingMode = EasingMode.EaseOut }));
+            figureMove.BeginAnimation(TranslateTransform.YProperty, a);
+        }
+
+        // Error: a confused little side-to-side wobble.
+        void Wobble()
+        {
+            var a = new DoubleAnimationUsingKeyFrames();
+            double[] xs = { 0, -3, 3, -2, 2, 0 };
+            for (int i = 0; i < xs.Length; i++)
+                a.KeyFrames.Add(new LinearDoubleKeyFrame(xs[i], KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(i * 70))));
+            figureMove.BeginAnimation(TranslateTransform.XProperty, a);
         }
 
         void Present(int autoHideMs)
@@ -234,7 +283,7 @@ namespace Yappity
             double left = screen.Left / sx, top = screen.Top / sy, width = screen.Width / sx, height = screen.Height / sy;
             double w = ActualWidth, h = ActualHeight;
             double x = Position.EndsWith("left") ? left : Position.EndsWith("right") ? left + width - w : left + (width - w) / 2;
-            double y = Position.StartsWith("bottom") ? top + height - h - 8 : top;
+            double y = Position.StartsWith("bottom") ? top + height - h - 8 : top - 8;
             Left = x;
             Top = y;
         }
@@ -247,19 +296,29 @@ namespace Yappity
                 var t = DateTime.UtcNow - since;
                 string time = (int)t.TotalMinutes + ":" + t.Seconds.ToString("00");
                 if (!label.Text.EndsWith(time)) label.Text = "Yap away  " + time;
-                if (badge.Children.Count > 0) badge.Opacity = 0.55 + 0.45 * (0.5 + 0.5 * Math.Sin(tick * 0.2));
+                status.Opacity = 0.55 + 0.45 * (0.5 + 0.5 * Math.Sin(tick * 0.2));
                 for (int i = 0; i < Bars; i++)
                 {
                     double target = 3 + targets[(barPos + i) % Bars] * 19;
                     heights[i] += (target - heights[i]) * 0.35; // ease toward the new level
                     bars[i].Height = heights[i];
                 }
+                // Her mouth follows your voice: closed, half open or wide open.
+                voice *= 0.92;
+                int want = voice < 0.18 ? 0 : voice < 0.42 ? ((int)(tick / 3) % 2 == 0 ? 1 : 3) : 2;
+                if (want != talkFrame && tick % 2 == 0)
+                {
+                    talkFrame = want;
+                    SetPose("talk-" + want);
+                }
             }
             else
             {
-                badge.Opacity = 1;
+                status.Opacity = 1;
                 if (mode == Mode.Working)
                 {
+                    // Gentle bob while she works.
+                    figureMove.Y = -2.5 * Math.Abs(Math.Sin(tick * 0.16));
                     for (int i = 0; i < dots.Children.Count; i++)
                     {
                         double phase = tick * 0.22 - i * 0.8;

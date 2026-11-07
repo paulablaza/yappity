@@ -39,9 +39,9 @@ namespace Yappity
             History = Store.LoadHistory();
 
             int iconSize = Math.Max(16, SystemInformation.SmallIconSize.Width);
-            idleIcon = Icons.Make(iconSize * 2, Icons.IdleColor);
-            recordingIcon = Icons.Make(iconSize * 2, Icons.RecordingColor);
-            workingIcon = Icons.Make(iconSize * 2, Icons.WorkingColor);
+            idleIcon = Icons.Tray(iconSize * 2, Color.Empty);
+            recordingIcon = Icons.Tray(iconSize * 2, Color.FromArgb(255, 69, 58));
+            workingIcon = Icons.Tray(iconSize * 2, Color.FromArgb(251, 191, 36));
 
             Theme.Refresh(Settings.Theme);
             BuildTrayMenu();

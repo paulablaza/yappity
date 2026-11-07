@@ -46,6 +46,41 @@ namespace Yappity
                 return Icon.FromHandle(bmp.GetHicon());
         }
 
+        // Tray icon: Chatter-Chan's face, with a small red (recording) or amber
+        // (working) dot in the corner. Falls back to the drawn mic if the image is missing.
+        public static Icon Tray(int size, Color dot)
+        {
+            Bitmap face = null;
+            try
+            {
+                var s = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("tray.png");
+                if (s != null) face = new Bitmap(s);
+            }
+            catch (Exception) { }
+            if (face == null) return Make(size, dot.IsEmpty ? IdleColor : dot);
+
+            using (face)
+            using (var bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb))
+            {
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    g.Clear(Color.Transparent);
+                    g.DrawImage(face, 0, 0, size, size);
+                    if (!dot.IsEmpty)
+                    {
+                        float d = size * 0.3f;
+                        float x = size - d - 0.5f, y = size - d - 0.5f;
+                        using (var ring = new SolidBrush(Color.FromArgb(24, 24, 28))) g.FillEllipse(ring, x - size * 0.05f, y - size * 0.05f, d + size * 0.1f, d + size * 0.1f);
+                        using (var b = new SolidBrush(dot)) g.FillEllipse(b, x, y, d, d);
+                    }
+                }
+                return Icon.FromHandle(bmp.GetHicon());
+            }
+        }
+
         static GraphicsPath Rounded(RectangleF r, float radius)
         {
             float d = radius * 2;

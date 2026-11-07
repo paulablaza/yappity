@@ -34,6 +34,22 @@ namespace Yappity
                 File.WriteAllText(args[2], sb.ToString(), Encoding.UTF8);
                 return 0;
             }
+            if (args.Length >= 2 && args[0] == "--tray-icons")
+            {
+                // Saves the idle, recording and working tray icons side by side.
+                var colors = new[] { System.Drawing.Color.Empty, System.Drawing.Color.FromArgb(255, 69, 58), System.Drawing.Color.FromArgb(251, 191, 36) };
+                using (var sheet = new System.Drawing.Bitmap(3 * 72, 72))
+                {
+                    using (var g = System.Drawing.Graphics.FromImage(sheet))
+                    {
+                        g.Clear(System.Drawing.Color.FromArgb(32, 32, 36));
+                        for (int i = 0; i < 3; i++)
+                            using (var ico = Icons.Tray(64, colors[i])) g.DrawIcon(ico, new System.Drawing.Rectangle(i * 72 + 4, 4, 64, 64));
+                    }
+                    sheet.Save(args[1]);
+                }
+                return 0;
+            }
             if (args.Length >= 3 && args[0] == "--bubble-test")
                 return TestBubble(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--test")

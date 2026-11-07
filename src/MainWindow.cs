@@ -90,12 +90,9 @@ namespace Yappity
             var root = new DockPanel();
             var header = new Grid { Margin = new Thickness(24, 18, 24, 14) };
             var brand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var logo = new Ellipse { Width = 34, Height = 34, Margin = new Thickness(0, 0, 11, 0) };
-            var faceImg = K.Image("face-hello.png");
-            if (faceImg != null) logo.Fill = new ImageBrush(faceImg) { Stretch = Stretch.UniformToFill };
-            else logo.Fill = K.B(K.Accent);
-            logo.Stroke = K.B(K.Alpha(K.Accent, 90));
-            logo.StrokeThickness = 1.5;
+            // Chatter-Chan waving next to the name, full body.
+            var logo = new Image { Source = K.Image("hello.png"), Height = 46, Margin = new Thickness(0, -6, 10, -4) };
+            RenderOptions.SetBitmapScalingMode(logo, BitmapScalingMode.HighQuality);
             brand.Children.Add(logo);
             brand.Children.Add(K.T("Yappity", 21, K.Text, FontWeights.Bold));
             header.Children.Add(brand);
