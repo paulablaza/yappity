@@ -1,0 +1,23 @@
+The attached image is the old mascot. Redesign her as "Yappy-chan", the mascot of Yappity, a free voice typing app.
+
+New design: a cute chibi FLOATING HEAD only, no body at all. Keep her look from the reference: lavender hair with the little ahoge curl, big sparkly purple eyes, rosy blush cheeks, cheerful expression. Add two small floating cartoon hands (no arms, just hands floating near the head, like a sticker character). Thick clean outlines, soft cel shading, very cute, readable even when small.
+
+Make these files. Keep the character IDENTICAL in every file: same hair shape, same eyes, same colors, same line style. First make base.png, then use base.png as the reference for every other image.
+
+Single images, 1024x1024:
+- base.png: facing forward, big happy smile, both hands open beside her face
+- logo.png: winking, one hand making a peace sign, big smile (this becomes the app icon, keep it bold and simple)
+- oops.png: confused, small sweat drop, one hand scratching her hair
+- sleepy.png: eyes closed, sleepy smile, a small "z z" drawn above her (shapes only, no letters is fine)
+
+Animation sprite sheets, 1024x1024, a 2x2 grid of 4 frames (top-left, top-right, bottom-left, bottom-right). Same size and same position of the head in every frame, only the expression and hands move:
+- sheet-talk.png: holding a small purple microphone in one hand, frames: mouth closed smile, mouth half open, mouth wide open, mouth half open
+- sheet-type.png: both hands typing on a tiny floating purple laptop under her chin, frames alternate which hand is down, focused cute face
+- sheet-tidy.png: one hand waving a tiny magic wand with sparkles around the head, sparkles move between frames
+- sheet-done.png: celebrating, wink and thumbs up, small stars around her, the head bounces a little higher in frames 2 and 3
+- sheet-wave.png: waving hello with one hand, the hand moves left and right across the 4 frames
+- sheet-dance.png: dancing with music notes, head tilts left, center, right, center, hands move to the beat
+
+Rules for every image: plain white background (or transparent if your tool supports it), no text, no letters, no logos, nothing touching the edges, frames in sheets must not overlap each other.
+
+Use your image generation tool. Save all files in this folder with exactly those names. Do not create or change any other files.

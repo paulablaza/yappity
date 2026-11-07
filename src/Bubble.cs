@@ -26,7 +26,7 @@ namespace Yappity
         public string Position = "top";
 
         const int Bars = 14;
-        const double FigureHeight = 70;
+        const double FigureHeight = 64;
         readonly Rectangle[] bars = new Rectangle[Bars];
         readonly double[] targets = new double[Bars];
         readonly double[] heights = new double[Bars];
@@ -43,10 +43,13 @@ namespace Yappity
         readonly StackPanel barPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 12, 0), Height = 22, VerticalAlignment = VerticalAlignment.Center };
         readonly StackPanel dots = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
         readonly TextBlock label = new TextBlock();
-        readonly DispatcherTimer frame = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        readonly DispatcherTimer frame = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         readonly DispatcherTimer hideTimer = new DispatcherTimer();
         Mode mode = Mode.Hidden;
         string pose;
+        System.Collections.Generic.List<ImageSource> loop;  // frames of the animation that's playing
+        int loopMs;
+        DateTime loopStart;
         DateTime since;
         double tick;
 
@@ -80,7 +83,7 @@ namespace Yappity
             tg.Children.Add(figureMove);
             figure.RenderTransform = tg;
             figure.RenderTransformOrigin = new Point(0.5, 1);
-            figure.Margin = new Thickness(0, -(FigureHeight - 46), 6, 2);
+            figure.Margin = new Thickness(-2, -(FigureHeight - 44), 6, 3);
             RenderOptions.SetBitmapScalingMode(figure, BitmapScalingMode.HighQuality);
 
             for (int i = 0; i < Bars; i++)
@@ -146,7 +149,7 @@ namespace Yappity
             bool wasWorking = mode == Mode.Working;
             mode = Mode.Working;
             figureMove.BeginAnimation(TranslateTransform.YProperty, null);
-            SetPose(text.StartsWith("Tidying") ? "tidying" : "writing");
+            if (text.StartsWith("Tidying")) Loop("tidy", 150); else Loop("type", 115);
             SetStatus(Colors.Transparent, false);
             barPanel.Visibility = Visibility.Collapsed;
             dots.Visibility = Visibility.Visible;
@@ -160,7 +163,8 @@ namespace Yappity
             barPanel.Visibility = Visibility.Collapsed;
             dots.Visibility = Visibility.Collapsed;
             label.Text = text;
-            SetPose(color == Green ? "done" : color == Amber ? "oops" : "idle");
+            if (color == Green) Loop("done", 150);
+            else SetPose(color == Amber ? "oops" : "sleepy");
             SetStatus(color, color == Green);
             Present(ms);
             if (color == Green) Hop();
@@ -190,8 +194,23 @@ namespace Yappity
             K.To(pillScale, ScaleTransform.ScaleYProperty, 0.92, 180, K.Out);
         }
 
+        // Plays name-0..3 over and over while the bubble shows this state.
+        void Loop(string name, int ms)
+        {
+            var frames = FrameLoop.Frames(name);
+            if (frames.Count == 0) { SetPose(name); return; }
+            bool changed = pose != name;
+            SetPose(name + "-0");
+            pose = name;
+            loop = frames;
+            loopMs = ms;
+            loopStart = DateTime.UtcNow;
+            if (!changed) return;
+        }
+
         void SetPose(string name)
         {
+            if (!name.StartsWith("talk-") || pose == null || !pose.StartsWith("talk-")) loop = null;
             if (name == pose) return;
             bool talking = name.StartsWith("talk-") && pose != null && pose.StartsWith("talk-");
             pose = name;
@@ -296,17 +315,17 @@ namespace Yappity
                 var t = DateTime.UtcNow - since;
                 string time = (int)t.TotalMinutes + ":" + t.Seconds.ToString("00");
                 if (!label.Text.EndsWith(time)) label.Text = "Yap away  " + time;
-                status.Opacity = 0.55 + 0.45 * (0.5 + 0.5 * Math.Sin(tick * 0.2));
+                status.Opacity = 0.55 + 0.45 * (0.5 + 0.5 * Math.Sin(tick * 0.3));
                 for (int i = 0; i < Bars; i++)
                 {
                     double target = 3 + targets[(barPos + i) % Bars] * 19;
-                    heights[i] += (target - heights[i]) * 0.35; // ease toward the new level
+                    heights[i] += (target - heights[i]) * 0.5; // ease toward the new level
                     bars[i].Height = heights[i];
                 }
                 // Her mouth follows your voice: closed, half open or wide open.
-                voice *= 0.92;
-                int want = voice < 0.18 ? 0 : voice < 0.42 ? ((int)(tick / 3) % 2 == 0 ? 1 : 3) : 2;
-                if (want != talkFrame && tick % 2 == 0)
+                voice *= 0.88;
+                int want = voice < 0.18 ? 0 : voice < 0.42 ? ((int)(tick / 2) % 2 == 0 ? 1 : 3) : 2;
+                if (want != talkFrame)
                 {
                     talkFrame = want;
                     SetPose("talk-" + want);
@@ -315,13 +334,18 @@ namespace Yappity
             else
             {
                 status.Opacity = 1;
+                if (loop != null && loop.Count > 0)
+                {
+                    int i = (int)((DateTime.UtcNow - loopStart).TotalMilliseconds / loopMs) % loop.Count;
+                    if (figure.Source != loop[i]) figure.Source = loop[i];
+                }
                 if (mode == Mode.Working)
                 {
                     // Gentle bob while she works.
-                    figureMove.Y = -2.5 * Math.Abs(Math.Sin(tick * 0.16));
+                    figureMove.Y = -2.5 * Math.Abs(Math.Sin(tick * 0.24));
                     for (int i = 0; i < dots.Children.Count; i++)
                     {
-                        double phase = tick * 0.22 - i * 0.8;
+                        double phase = tick * 0.33 - i * 0.8;
                         double lift = Math.Max(0, Math.Sin(phase));
                         var dot = (Ellipse)dots.Children[i];
                         ((TranslateTransform)dot.RenderTransform).Y = -lift * 4;

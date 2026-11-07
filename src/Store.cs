@@ -22,10 +22,12 @@ namespace Yappity
         public string Bubble { get; set; }        // where the "Yap away" bubble shows up
 
         public string Theme { get; set; }         // "system", "light" or "dark"
+        public int KeepAudioDays { get; set; }    // how long recordings stay in History, 0 = delete after it works
 
         public Settings()
         {
             Theme = "system";
+            KeepAudioDays = 7;
             Bubble = "top";
             ShortcutVk = 0x4B; // K
             ShortcutMods = KeyboardHook.ModCtrl | KeyboardHook.ModShift;
@@ -87,7 +89,7 @@ namespace Yappity
         public static readonly string Dir = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))
             ? Environment.GetEnvironmentVariable("YAPPITY_HOME")
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Yappity");
-        public static readonly string AudioDir = Path.Combine(Dir, "failed-audio");
+        public static readonly string AudioDir = Path.Combine(Dir, "recordings");
         static readonly string SettingsFile = Path.Combine(Dir, "settings.json");
         static readonly string HistoryFile = Path.Combine(Dir, "history.json");
         static readonly string LogFile = Path.Combine(Dir, "log.txt");

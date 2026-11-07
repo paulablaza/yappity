@@ -159,6 +159,62 @@ namespace Yappity
         }
     }
 
+    // Plays Yappy-chan's animation frames (name-0.png .. name-3.png) on an Image, like a GIF.
+    internal sealed class FrameLoop
+    {
+        readonly Image target;
+        readonly System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer();
+        ImageSource[] seq = new ImageSource[0];
+        int index;
+
+        public FrameLoop(Image target)
+        {
+            this.target = target;
+            timer.Tick += delegate
+            {
+                if (seq.Length == 0) return;
+                index = (index + 1) % seq.Length;
+                this.target.Source = seq[index];
+            };
+            // Stop when the image leaves the screen so nothing animates in the background.
+            target.Unloaded += delegate { timer.Stop(); };
+            target.Loaded += delegate { if (seq.Length > 1) timer.Start(); };
+        }
+
+        // pingPong plays 0 1 2 3 2 1 so a wave or head tilt goes back and forth smoothly.
+        public void Play(string name, int ms, bool pingPong)
+        {
+            var frames = Frames(name);
+            if (frames.Count == 0) { Still(name); return; }
+            if (pingPong) for (int i = frames.Count - 2; i > 0; i--) frames.Add(frames[i]);
+            seq = frames.ToArray();
+            index = 0;
+            target.Source = seq[0];
+            timer.Interval = TimeSpan.FromMilliseconds(ms);
+            timer.Start();
+        }
+
+        public void Still(string name)
+        {
+            timer.Stop();
+            seq = new ImageSource[0];
+            var img = K.Image(name + ".png");
+            if (img != null) target.Source = img;
+        }
+
+        public static List<ImageSource> Frames(string name)
+        {
+            var list = new List<ImageSource>();
+            for (int i = 0; i < 8; i++)
+            {
+                var img = K.Image(name + "-" + i + ".png");
+                if (img == null) break;
+                list.Add(img);
+            }
+            return list;
+        }
+    }
+
     // A rounded button that presses down slightly when clicked.
     internal class PillButton : Border
     {

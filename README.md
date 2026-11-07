@@ -1,71 +1,103 @@
 <p align="center">
-  <img src="docs/chatter-chan-yapping.gif" width="240" alt="Chatter-Chan, the Yappity mascot, yapping">
+  <img src="docs/yappy-dance.gif" width="220" alt="Yappy-chan dancing">
 </p>
 
 <h1 align="center">Yappity</h1>
 
 <p align="center">
-  Press a shortcut, yap, press it again. Whatever you said gets typed where your cursor is.<br>
-  Free voice typing for Windows, running on Groq's free API.
+  <b>Free voice typing for Windows.</b><br>
+  Press a shortcut, yap, press it again. Whatever you said gets typed where your cursor is.
 </p>
-
----
-
-## Why this exists
-
-I wanted something like Wispr Flow without paying for a subscription. The open source ones I found
-either run Whisper on your own PC, which gets slow if your PC isn't strong, or ship a whole browser
-engine just to show a settings window.
-
-Yappity sends your audio to Groq instead, so it's fast even on a cheap laptop. You bring your own free
-Groq key and that's it. The whole app is one small `.exe`, and while it waits in your tray it uses
-about 1 MB of memory.
-
----
-
-## How it works
 
 <p align="center">
-  <img src="docs/bubble-listening.png" height="64" alt="Bubble while recording">
-  <img src="docs/bubble-working.png" height="64" alt="Bubble while writing it down">
-  <img src="docs/bubble-done.png" height="64" alt="Bubble when done">
-</p>
-
-1. Press **Ctrl + Shift + K** anywhere and start talking. A little bubble shows up at the top of your
-   screen with your voice level, a timer, and Chatter-Chan yapping along with you.
-2. Press **Ctrl + Shift + K** again when you're done. Press **Esc** instead if you want to throw it away.
-3. **Whisper Large v3** turns your voice into text, usually in about a second.
-4. **Qwen 3.8 27B** tidies it up. It takes out the um, uh, you know, repeated words and false starts,
-   and fixes the punctuation. If you say "at 3, no wait, at 4", you get "at 4". It never rewrites
-   your sentences, never answers questions you dictate, and never translates.
-5. Yappity types the text into whatever app you're in, the same way your keyboard would, so your
-   clipboard stays untouched.
-
-Every yap also lands in **History**. Double-click one to copy it. If your internet dropped, the audio
-is saved there too so you can retry it.
-
-<p align="center">
-  <img src="docs/history-dark.png" width="400" alt="History in dark mode">
-  <img src="docs/history-light.png" width="400" alt="History in light mode">
+  <img src="https://img.shields.io/badge/price-free-8b7fff" alt="Free">
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-5b4bea" alt="Windows 10 and 11">
+  <img src="https://img.shields.io/badge/download-under%201%20MB-8b7fff" alt="Under 1 MB">
+  <img src="https://img.shields.io/badge/idle%20RAM-about%202%20MB-5b4bea" alt="About 2 MB idle">
+  <img src="https://img.shields.io/badge/license-MIT-8b7fff" alt="MIT license">
 </p>
 
 ---
 
-## Setup
+## Why I made this
+
+I wanted something like Wispr Flow without paying for a subscription every month. The free and open
+source ones I tried either run Whisper on your own PC, which gets slow fast if your PC isn't strong,
+or they ship a whole browser engine just to show a settings window.
+
+So Yappity does the heavy lifting on Groq instead. Groq gives everyone a free API key, and their
+servers turn your voice into text in about a second. That means it's fast even on a cheap laptop,
+and the app itself stays tiny. You bring your own free key and that's it, nothing to pay, nothing
+to sign up for besides Groq.
+
+---
+
+## What it does
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/yappy-talk.gif" width="150"><br><b>You talk</b><br>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> and yap. Yappy-chan talks along with your voice.</td>
+    <td align="center" width="25%"><img src="docs/yappy-type.gif" width="150"><br><b>She writes it down</b><br>Whisper Large v3 turns it into text, usually in about a second.</td>
+    <td align="center" width="25%"><img src="docs/yappy-tidy.gif" width="150"><br><b>She tidies it up</b><br>The um, uh and you know get cleaned out. Your words stay yours.</td>
+    <td align="center" width="25%"><img src="docs/yappy-done.gif" width="150"><br><b>Done</b><br>The text gets typed right where your cursor is, in any app.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/bubble-listening.png" height="72" alt="The bubble while you talk">
+  <img src="docs/bubble-working.png" height="72" alt="The bubble while tidying">
+  <img src="docs/bubble-done.png" height="72" alt="The bubble when it's done">
+</p>
+
+While you talk, a little bubble shows up at the top of your screen with your voice level, a timer and
+Yappy-chan. It never steals focus from what you're typing in, and clicks go right through it.
+
+**The cleanup is careful on purpose.** It only removes filler words, stutters and false starts, and
+fixes punctuation. If you say "at 3, no wait, at 4", you get "at 4". It never rewrites your
+sentences, never answers a question you dictate, never translates, and never uses em dashes.
+
+---
+
+## Features
+
+- **Free.** Runs on Groq's free plan. About 2,000 recordings a day per key.
+- **Fast.** Usually about a second from when you stop talking to when the text shows up.
+- **Tiny.** One `.exe` under 1 MB. Nothing to install, it uses the .NET that comes with Windows.
+- **Light.** About 2 MB of memory in Task Manager while it waits in your tray.
+- **Types like a keyboard.** Your clipboard is never touched. Paste mode is there if you want it.
+- **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
+- **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
+- **Your shortcut, your way.** Toggle (press to start, press to stop) or hold to talk, with any keys you want. <kbd>Esc</kbd> cancels.
+- **Long recordings.** Up to 30 minutes. Long ones get split at a pause and sent in parts.
+- **Backup model.** If the cleanup model is busy or out of free requests, Yappity tries another one, then falls back to exactly what Whisper heard.
+- **Light and dark mode,** with a one-click switch in the window.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/history-dark.png" width="420" alt="History in dark mode with a recording opened">
+  <img src="docs/welcome-light.png" width="420" alt="First launch in light mode">
+</p>
+<p align="center">
+  <img src="docs/settings-dark.png" width="420" alt="Settings in dark mode">
+  <img src="docs/empty-dark.png" width="420" alt="Empty history with Yappy-chan dancing">
+</p>
+
+---
+
+## Get started
 
 1. Download `Yappity.exe` from [Releases](../../releases) and run it.
-   Windows will probably warn you that it doesn't recognize the app, because it isn't code signed yet.
-   Click **More info**, then **Run anyway**.
-2. Get a free key at [console.groq.com/keys](https://console.groq.com/keys) and paste it in Settings.
-3. Click into any text box, press Ctrl + Shift + K and say something.
+2. Windows will probably say it doesn't recognize the app, because it isn't code signed yet. Click
+   **More info**, then **Run anyway**. The code is all here if you want to check it first.
+3. Grab a free key at [console.groq.com/keys](https://console.groq.com/keys). It takes about a minute.
+4. Paste the key in Settings and press **Test**.
+5. Click into any text box, press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd>, say something,
+   and press it again.
 
-You don't need to install anything else. Yappity runs on the .NET Framework that already comes with
-Windows 10 and 11.
-
-<p align="center">
-  <img src="docs/welcome-light.png" width="400" alt="First launch">
-  <img src="docs/settings-dark.png" width="400" alt="Settings">
-</p>
+That's the whole setup. Turn on **Start with Windows** in Settings if you want it ready every time.
 
 ---
 
@@ -73,106 +105,133 @@ Windows 10 and 11.
 
 | Setting | What it does |
 | :--- | :--- |
-| Shortcut | Click it and press any keys you want. Ctrl + Shift + K is the default |
+| Shortcut | Click it and press any keys. <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> is the default |
 | Mode | **Toggle** (press to start, press to stop) or **Hold** (hold while you talk) |
 | When you're done | **Type it in** (default), **Paste it** with Ctrl+V, or **History only** |
 | Bubble | Top center (default), any corner, or bottom center |
 | Speech to text | Whisper Large v3 (most accurate) or Whisper Large v3 Turbo (a bit faster) |
 | Cleanup | Qwen 3.8 27B (default), gpt-oss-120b, gpt-oss-20b, or off |
-| Language | Auto, **English + Tagalog** for Taglish, or a fixed language |
+| Language | Auto, **English + Tagalog** for Taglish, or one fixed language |
 | Words to spell right | Names and slang Whisper keeps getting wrong, separated by commas |
+| Keep recordings | 1, 3, 7 (default) or 30 days, or don't keep them. Failed ones always stay 30 days |
 | Theme | Match Windows, light or dark |
 | Start with Windows | Opens Yappity quietly in your tray when you sign in |
-
-If the cleanup model hits its limit or Groq is busy, Yappity tries a second model, and if that fails
-too it types exactly what Whisper heard. You never lose a yap.
-
-Recordings can be up to 30 minutes long. Anything over 10 minutes gets split at a pause and sent to
-Groq in parts, because Groq only takes files up to 25 MB.
-
-Windows doesn't let normal apps type into apps running as admin. In those, Yappity tells you and
-keeps the text in History.
 
 ---
 
 ## Free tier limits
 
-These are Groq's free limits per API key, at the time of writing:
+These are Groq's free limits per API key at the time of writing. Settings shows how many you have
+left today after your first yap.
 
 | Model | Used for | Free limit |
 | :--- | :--- | :--- |
-| `whisper-large-v3` / `whisper-large-v3-turbo` | Speech to text | 2,000 a day, 20 a minute, 2 hours of audio an hour |
-| `qwen/qwen3.8-27b` | Cleanup | 1,000 a day, 30 a minute, 8,000 tokens a minute |
-| `openai/gpt-oss-120b` / `openai/gpt-oss-20b` | Cleanup | 1,000 a day, 30 a minute, 8,000 tokens a minute |
+| `whisper-large-v3` and `whisper-large-v3-turbo` | Speech to text | 2,000 a day, 20 a minute, 2 hours of audio an hour |
+| `qwen/qwen3.8-27b` | Cleanup (default) | 1,000 a day, 30 a minute, 8,000 tokens a minute |
+| `openai/gpt-oss-120b` and `openai/gpt-oss-20b` | Cleanup | 1,000 a day, 30 a minute, 8,000 tokens a minute |
 
 Groq counts every recording as at least 10 seconds. Each cleanup model has its own daily limit, so
-with the backup model you get around 2,000 cleanups a day. Settings shows how many you have left
-today after your first yap.
+with the backup model you get around 2,000 cleanups a day. Groq sets these numbers and can change
+them, so check [console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits) if
+something looks off.
 
-*(Groq sets these limits and can change them. Check [console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits).)*
+---
+
+## Performance
+
+Measured on Windows 11 with `tools/benchmark.ps1`. "Task Manager" is the Memory column you see there.
+
+| | Result |
+| :--- | :--- |
+| Download size | 616 KB, one file |
+| Memory while idle in the tray | about 2 to 3 MB |
+| Memory with the window open | about 24 MB, back to idle when you close it |
+| Window opens in | under a second |
+| Speech to text (9 second clip) | about 0.9 seconds on Groq |
+| Cleanup | about 0.3 seconds with Qwen, about 0.8 with gpt-oss-120b |
+| CPU while the bubble animates | a few percent of one core, nothing while idle |
 
 ---
 
 ## Privacy
 
-Your audio goes from your PC to Groq and nowhere else. Your key is encrypted with Windows DPAPI, so
-only your Windows account can read it. History stays on your PC in `%APPDATA%\Yappity`.
+Your audio goes from your PC straight to Groq and nowhere else. There's no account, no analytics and
+no server of mine in between. Your Groq key is encrypted with Windows DPAPI, so only your Windows
+account can read it. History and recordings stay on your PC in `%APPDATA%\Yappity`, and old
+recordings get deleted on their own.
 
 ---
 
-## Meet Chatter-Chan
+## Meet Yappy-chan
 
 <p align="center">
-  <img src="design/mascots/chatter-chan/all-poses.png" width="760" alt="Chatter-Chan's 8 poses">
+  <img src="docs/yappy-logo.png" width="160" alt="Yappy-chan winking">
+  <img src="docs/yappy-wave.gif" width="160" alt="Yappy-chan waving">
+  <img src="docs/yappy-dance.gif" width="160" alt="Yappy-chan dancing">
 </p>
 
-She's everywhere in Yappity. She's the app icon and the tray icon, she waves at you on first launch,
-and she holds the mic out when your history is empty. In the bubble she moves her mouth along with
-your voice while you talk, sweeps while the text gets cleaned up, and jumps with a thumbs up when
-it's done.
+Yappy-chan is the chibi who lives in Yappity. She's the app icon, she waves at you the first time you
+open it, dances while your history is empty, and reacts in the bubble while you talk: holding the
+mic, typing on her tiny laptop, sweeping up the um's with a magic wand, and winking with a thumbs up
+when it's done. If something goes wrong she scratches her head, and if Whisper didn't hear anything
+she dozes off.
+
+---
+
+## FAQ
+
+**Windows Defender or SmartScreen warns me about it.**
+Yappity isn't code signed yet, so Windows doesn't know it. It also listens for your shortcut in every
+app, which is the same Windows feature some keyloggers use, so a few antivirus apps get nervous.
+All of the code is in this repo, and you can build it yourself in one command (see below).
+
+**It didn't type into an app.**
+Windows blocks normal apps from typing into apps that run as administrator. Yappity tells you when
+that happens, and the text is waiting in History. A few apps also prefer pasting, so try
+**When you're done: Paste it** for those.
+
+**I talk in Taglish and Whisper translates some of it.**
+Set **Language** to **English + Tagalog**. It tells Whisper to expect both and keep each word as you
+said it.
+
+**It says it didn't hear anything.**
+Check that your mic is on and that Windows Settings > Privacy > Microphone allows desktop apps.
+
+**I hit the free limit.**
+The recording is saved in History. Send it again later, or switch the cleanup model in Settings,
+since each model has its own daily limit.
 
 ---
 
 ## Build it yourself
 
-You don't need Visual Studio or any SDK. Windows already has a C# compiler.
+You don't need Visual Studio or any SDK. Windows already comes with a C# compiler.
 
 ```powershell
+git clone https://github.com/paulablaza/yappity
+cd yappity
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-That gives you `bin\Yappity.exe`.
+That gives you `bin\Yappity.exe`. If you're an AI coding agent, or you're pointing one at this repo,
+read [AGENTS.md](AGENTS.md) first. It has the build rules, where everything lives, and how to test
+without a mic.
 
 | File | What's in it |
 | :--- | :--- |
 | `src/App.cs` | Tray icon and the record, transcribe, clean up, type flow |
-| `src/KeyboardHook.cs` | The global shortcut, toggle and hold modes, Esc to cancel |
-| `src/Recorder.cs` | Mic recording at 16 kHz mono using the Windows waveIn API |
-| `src/Groq.cs` | Whisper and cleanup requests, model list and free limits |
+| `src/KeyboardHook.cs` | The global shortcut, toggle and hold modes, <kbd>Esc</kbd> to cancel |
+| `src/Recorder.cs` | Mic recording at 16 kHz mono with the Windows waveIn API |
+| `src/Groq.cs` | Whisper and cleanup requests, model list, free limits, the cleanup prompt |
 | `src/Paster.cs` | Typing the text in, or pasting it |
-| `src/Bubble.cs` | The floating bubble |
+| `src/Bubble.cs` | The floating bubble and Yappy-chan's animations in it |
 | `src/MainWindow.cs`, `src/Kit.cs` | History and Settings window (WPF) |
-| `src/Store.cs` | Settings, history and logs |
-| `tools/make-art.py` | Makes the icon, tray icon and every Chatter-Chan image the app uses |
-| `tools/make-gif.ps1` | Turns a 4-frame sprite sheet into the README GIF |
-
-Commands for testing without a mic or hotkey:
-
-```powershell
-# Send a WAV file through Whisper and cleanup (uses GROQ_API_KEY or your saved key)
-bin\Yappity.exe --test sample.wav result.txt
-
-# Run each line of a text file through cleanup only
-bin\Yappity.exe --clean-test lines.txt result.txt
-
-# Record a few seconds from your mic
-bin\Yappity.exe --record-test 3 mic.wav
-```
-
-Set `YAPPITY_HOME` if you want settings and history in a different folder.
+| `src/Store.cs` | Settings, history, recordings and logs |
+| `tools/make-art.py` | Turns the art in `design/yappy-chan` into the app images, icon and GIFs |
+| `tools/benchmark.ps1` | The memory benchmark above |
 
 ---
 
 ## License
 
-MIT
+MIT. Use it, fork it, make your own version. If you make something cool with it, I'd love to see it.

@@ -170,16 +170,19 @@ namespace Yappity
             return 0;
         }
 
+        // Renders the window's own pixels with a transparent background, so nothing on
+        // the screen behind it ends up in the picture.
         static void Snap(System.Windows.Window w, string path)
         {
-            var src = System.Windows.PresentationSource.FromVisual(w);
-            double sx = src.CompositionTarget.TransformToDevice.M11, sy = src.CompositionTarget.TransformToDevice.M22;
-            int x = (int)(w.Left * sx), y = (int)(w.Top * sy), width = (int)(w.ActualWidth * sx), height = (int)(w.ActualHeight * sy);
-            using (var bmp = new System.Drawing.Bitmap(width, height))
-            {
-                using (var g = System.Drawing.Graphics.FromImage(bmp)) g.CopyFromScreen(x, y, 0, 0, bmp.Size);
-                bmp.Save(path);
-            }
+            var visual = (System.Windows.FrameworkElement)w.Content;
+            double scale = 2;
+            var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                (int)(w.ActualWidth * scale), (int)(w.ActualHeight * scale), 96 * scale, 96 * scale,
+                System.Windows.Media.PixelFormats.Pbgra32);
+            rtb.Render(visual);
+            var png = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            png.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+            using (var f = File.Create(path)) png.Save(f);
         }
 
         // Yappity.exe --record-test seconds output.wav

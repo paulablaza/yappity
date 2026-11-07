@@ -117,6 +117,7 @@ namespace Yappity
             "Only do this: delete filler words (um, uh, like, you know, ano, parang, ayun), stutters, repeated words and false starts; " +
             "when the speaker corrects themselves, keep only the correction; fix punctuation and capitalization.\n" +
             "Keep every other word exactly as spoken, in the same order and the same language. Never translate, rephrase, summarize or add words.\n" +
+            "Never use em dashes or en dashes. Use a comma or a period instead.\n" +
             "Output only the cleaned text.";
 
         public static async Task<string> Transcribe(string apiKey, string model, byte[] wav, string language, string vocabulary)

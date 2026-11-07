@@ -68,11 +68,16 @@ namespace Yappity
             };
             hook.Install();
 
+            PruneAudio();
             trimTimer.Interval = TimeSpan.FromSeconds(4);
             trimTimer.Tick += delegate
             {
+                // Hand unused memory back to Windows a few seconds after each yap, then
+                // every two minutes while Yappity just sits in the tray.
                 trimTimer.Stop();
                 if (!recorder.IsRecording && busy == 0 && window == null) Native.TrimMemory();
+                trimTimer.Interval = TimeSpan.FromMinutes(2);
+                trimTimer.Start();
             };
 
             if (string.IsNullOrEmpty(Settings.ApiKey))
@@ -89,6 +94,7 @@ namespace Yappity
         void ScheduleTrim()
         {
             trimTimer.Stop();
+            trimTimer.Interval = TimeSpan.FromSeconds(4);
             trimTimer.Start();
         }
 
@@ -113,7 +119,9 @@ namespace Yappity
         }
 
         // Light, dark or follow Windows. The window is rebuilt so every color updates.
-        public void ApplyTheme()
+        public void ApplyTheme() { ApplyTheme(true); }
+
+        public void ApplyTheme(bool settingsTab)
         {
             Theme.Refresh(Settings.Theme);
             BuildTrayMenu();
@@ -121,7 +129,7 @@ namespace Yappity
             {
                 var old = window;
                 window = null;
-                ShowWindow(true);
+                ShowWindow(settingsTab);
                 window.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
                 window.Left = old.Left;
                 window.Top = old.Top;
@@ -223,7 +231,8 @@ namespace Yappity
             await Process(Recorder.ToWav(pcm), seconds, null, true);
         }
 
-        // Runs Whisper and cleanup. `existing` is set when retrying a failed entry.
+        // Runs Whisper and cleanup. `existing` is set when retrying an entry from History.
+        // The recording is saved to disk first, so it survives even if Groq fails.
         async Task Process(byte[] wav, double seconds, HistoryEntry existing, bool pasteIntoActiveWindow)
         {
             busy++;
@@ -231,14 +240,21 @@ namespace Yappity
             overlay.ShowWorking("Writing it down");
             string key = Settings.ApiKey;
             HistoryEntry entry = existing;
+            string id = existing != null ? existing.Id : Guid.NewGuid().ToString("N");
+            string audio = existing != null && !string.IsNullOrEmpty(existing.AudioFile) && File.Exists(existing.AudioFile)
+                ? existing.AudioFile : null;
+            try { if (audio == null) audio = Store.SaveAudio(id, wav); }
+            catch (Exception e) { Store.Log("Couldn't save the recording: " + e.Message); }
             try
             {
                 string raw = await TranscribeAll(key, wav);
                 if (IsNothing(raw, seconds))
                 {
+                    if (existing == null) DeleteFile(audio);
                     overlay.ShowMessage("Didn't catch any words there.", Bubble.Grey, 2000);
                     return;
                 }
+                raw = Tidy(raw);
 
                 string text = raw;
                 string cleanupModel = Groq.Find(Groq.CleanupModels, Settings.CleanupModel).Id;
@@ -247,12 +263,12 @@ namespace Yappity
                     overlay.ShowWorking("Tidying up");
                     text = await CleanupWithBackup(key, cleanupModel, raw);
                 }
-                text = text.Trim();
+                text = Tidy(text);
 
                 if (entry == null)
                 {
                     entry = new HistoryEntry();
-                    entry.Id = Guid.NewGuid().ToString("N");
+                    entry.Id = id;
                     entry.TimeUtc = DateTime.UtcNow;
                     entry.Seconds = seconds;
                     History.Insert(0, entry);
@@ -261,7 +277,8 @@ namespace Yappity
                 entry.Text = text;
                 entry.Failed = false;
                 entry.Error = null;
-                Store.DeleteAudio(entry);
+                entry.AudioFile = audio;
+                if (Settings.KeepAudioDays <= 0) Store.DeleteAudio(entry);
                 Store.SaveHistory(History);
                 RefreshWindow();
 
@@ -286,18 +303,17 @@ namespace Yappity
                 if (entry == null)
                 {
                     entry = new HistoryEntry();
-                    entry.Id = Guid.NewGuid().ToString("N");
+                    entry.Id = id;
                     entry.TimeUtc = DateTime.UtcNow;
                     entry.Seconds = seconds;
                     History.Insert(0, entry);
                 }
                 entry.Failed = true;
                 entry.Error = e.Message;
-                if (e.CanRetry && string.IsNullOrEmpty(entry.AudioFile))
-                    entry.AudioFile = Store.SaveAudio(entry.Id, wav);
+                entry.AudioFile = audio; // failed recordings are always kept so you can retry them
                 Store.SaveHistory(History);
                 RefreshWindow();
-                overlay.ShowMessage(e.Message + (e.CanRetry ? " Retry it from History." : ""), Bubble.Amber, 5000);
+                overlay.ShowMessage(e.Message + " The recording is saved in History.", Bubble.Amber, 5000);
             }
             catch (Exception e)
             {
@@ -387,6 +403,47 @@ namespace Yappity
             return best;
         }
 
+        static void DeleteFile(string path)
+        {
+            try { if (path != null && File.Exists(path)) File.Delete(path); } catch (Exception) { }
+        }
+
+        // No em dashes or en dashes in the final text, ever. Commas read more human.
+        public static string Tidy(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            string t = text.Replace(" \u2014 ", ", ").Replace(" \u2013 ", ", ").Replace("\u2014", ", ").Replace("\u2013", "-");
+            while (t.Contains(" ,")) t = t.Replace(" ,", ",");
+            while (t.Contains(",,")) t = t.Replace(",,", ",");
+            while (t.Contains("  ")) t = t.Replace("  ", " ");
+            return t.Trim();
+        }
+
+        // Deletes recordings older than the "Keep recordings" setting. Recordings that
+        // failed to send are kept for 30 days so they can still be retried.
+        public void PruneAudio()
+        {
+            bool changed = false;
+            var now = DateTime.UtcNow;
+            foreach (var e in History)
+            {
+                if (string.IsNullOrEmpty(e.AudioFile)) continue;
+                int days = e.Failed ? Math.Max(30, Settings.KeepAudioDays) : Settings.KeepAudioDays;
+                if (!File.Exists(e.AudioFile) || (now - e.TimeUtc).TotalDays > days) { Store.DeleteAudio(e); changed = true; }
+            }
+            // Recordings no history item points to (for example after "Clear all").
+            try
+            {
+                var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var e in History) if (!string.IsNullOrEmpty(e.AudioFile)) known.Add(e.AudioFile);
+                if (Directory.Exists(Store.AudioDir))
+                    foreach (string f in Directory.GetFiles(Store.AudioDir, "*.wav"))
+                        if (!known.Contains(f) && (now - File.GetLastWriteTimeUtc(f)).TotalHours > 1) DeleteFile(f);
+            }
+            catch (Exception) { }
+            if (changed) Store.SaveHistory(History);
+        }
+
         // Whisper sometimes "hears" these in near-silence.
         static readonly string[] Phantoms =
         {
@@ -404,6 +461,7 @@ namespace Yappity
         public async void Retry(HistoryEntry entry)
         {
             if (entry == null || string.IsNullOrEmpty(entry.AudioFile) || !File.Exists(entry.AudioFile)) return;
+            overlay.ShowWorking("Writing it down");
             byte[] wav = File.ReadAllBytes(entry.AudioFile);
             await Process(wav, entry.Seconds, entry, false);
         }

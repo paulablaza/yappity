@@ -44,6 +44,15 @@ namespace Yappity
             new Choice("bottom-left", "Bottom left", "Shows up just above your taskbar in the bottom left corner."),
         };
 
+        public static readonly Choice[] KeepAudio =
+        {
+            new Choice("1", "1 day", "Every recording stays in History for a day, so you can play it, send it again or drag it out. Recordings that failed to send stay for 30 days."),
+            new Choice("3", "3 days", "Every recording stays in History for 3 days, so you can play it, send it again or drag it out. Recordings that failed to send stay for 30 days."),
+            new Choice("7", "7 days", "Every recording stays in History for a week, so you can play it, send it again or drag it out. Recordings that failed to send stay for 30 days."),
+            new Choice("30", "30 days", "Every recording stays in History for a month. A minute of talking takes about 2 MB, so this can add up if you yap a lot."),
+            new Choice("0", "Don't keep", "Recordings are deleted as soon as the text comes back. Recordings that failed to send are still kept for 30 days so you can retry them."),
+        };
+
         public static readonly Choice[] Themes =
         {
             new Choice("system", "Match Windows", "Yappity follows your Windows setting and switches between light and dark along with the rest of your PC."),
@@ -90,16 +99,18 @@ namespace Yappity
             var root = new DockPanel();
             var header = new Grid { Margin = new Thickness(24, 18, 24, 14) };
             var brand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            // Chatter-Chan waving next to the name, full body.
-            var logo = new Image { Source = K.Image("hello.png"), Height = 46, Margin = new Thickness(0, -6, 10, -4) };
+            // Yappy-chan's wink next to the name.
+            var logo = new Image { Source = K.Image("logo.png"), Height = 40, Margin = new Thickness(0, -4, 10, -2) };
             RenderOptions.SetBitmapScalingMode(logo, BitmapScalingMode.HighQuality);
             brand.Children.Add(logo);
             brand.Children.Add(K.T("Yappity", 21, K.Text, FontWeights.Bold));
             header.Children.Add(brand);
-            tabs.HorizontalAlignment = HorizontalAlignment.Right;
             tabs.VerticalAlignment = VerticalAlignment.Center;
             tabs.Selected += delegate(int i) { Switch(i == 1); };
-            header.Children.Add(tabs);
+            var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            right.Children.Add(ThemeButton());
+            right.Children.Add(tabs);
+            header.Children.Add(right);
             DockPanel.SetDock(header, Dock.Top);
             root.Children.Add(header);
 
@@ -109,7 +120,49 @@ namespace Yappity
             Content = root;
 
             SourceInitialized += delegate { StyleTitleBar(); };
-            Closed += delegate { settings.StopCapture(); };
+            Closed += delegate { settings.StopCapture(); history.StopAudio(); };
+        }
+
+        // One click switches between light and dark. The icon shows what you'll get.
+        FrameworkElement ThemeButton()
+        {
+            var bg = K.B(Colors.Transparent);
+            var b = new Border { Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = bg, Margin = new Thickness(0, 0, 10, 0), Cursor = Cursors.Hand, ToolTip = K.Dark ? "Switch to light mode" : "Switch to dark mode" };
+            K.Hover(b, bg, Colors.Transparent, K.Dark ? K.Hex(0x25252C) : K.Hex(0xE6E6EB));
+            var icon = new System.Windows.Shapes.Path { Width = 17, Height = 17, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            if (K.Dark)
+            {
+                // Sun
+                var g = new GeometryGroup();
+                g.Children.Add(new EllipseGeometry(new Point(12, 12), 4.5, 4.5));
+                for (int i = 0; i < 8; i++)
+                {
+                    double a = i * Math.PI / 4;
+                    g.Children.Add(new LineGeometry(new Point(12 + Math.Cos(a) * 7.5, 12 + Math.Sin(a) * 7.5), new Point(12 + Math.Cos(a) * 10, 12 + Math.Sin(a) * 10)));
+                }
+                icon.Data = g;
+                icon.Stroke = K.B(K.Text);
+                icon.StrokeThickness = 1.8;
+                icon.StrokeStartLineCap = PenLineCap.Round;
+                icon.StrokeEndLineCap = PenLineCap.Round;
+            }
+            else
+            {
+                // Moon
+                icon.Data = new CombinedGeometry(GeometryCombineMode.Exclude, new EllipseGeometry(new Point(12, 12), 9, 9), new EllipseGeometry(new Point(17, 8), 7.5, 7.5));
+                icon.Fill = K.B(K.Text);
+            }
+            b.Child = icon;
+            var spin = new RotateTransform();
+            icon.RenderTransform = spin;
+            icon.RenderTransformOrigin = new Point(0.5, 0.5);
+            b.MouseLeftButtonUp += delegate
+            {
+                app.Settings.Theme = K.Dark ? "light" : "dark";
+                Store.SaveSettings(app.Settings);
+                app.ApplyTheme(Content is FrameworkElement && settings.Visibility == Visibility.Visible);
+            };
+            return b;
         }
 
         public void ShowTab(bool showSettings)
@@ -233,6 +286,8 @@ namespace Yappity
                 K.To(toast, OpacityProperty, 0, 250, K.Out);
             };
             clearTimer.Tick += delegate { clearTimer.Stop(); armed = false; clear.Text = "Clear all"; clear.Foreground = K.B(K.Muted); };
+            // For screenshots: YAPPITY_OPEN_FIRST=1 opens the newest card.
+            if (Environment.GetEnvironmentVariable("YAPPITY_OPEN_FIRST") == "1" && app.History.Count > 0) openId = app.History[0].Id;
             Reload();
         }
 
@@ -257,11 +312,12 @@ namespace Yappity
         FrameworkElement Empty()
         {
             var p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(20, 40, 20, 20) };
-            var img = K.Image("waiting.png");
-            if (img != null)
+            if (K.Image("dance-0.png") != null)
             {
-                var pic = new Image { Source = img, Height = 220, Margin = new Thickness(0, 0, 0, 18) };
+                // She dances while she waits for your first yap.
+                var pic = new Image { Height = 190, Margin = new Thickness(0, 0, 0, 18) };
                 RenderOptions.SetBitmapScalingMode(pic, BitmapScalingMode.HighQuality);
+                new FrameLoop(pic).Play("dance", 170, false);
                 p.Children.Add(pic);
                 // She floats up and down a little while she waits.
                 var bob = new TranslateTransform();
@@ -322,21 +378,37 @@ namespace Yappity
 
             if (open)
             {
-                var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
-                if (e.Failed && !string.IsNullOrEmpty(e.AudioFile)) actions.Children.Add(Action("Retry", K.Accent, delegate { Toast("Sending it again"); app.Retry(e); }));
+                var actions = new WrapPanel { Margin = new Thickness(0, 12, 0, 0) };
                 if (!e.Failed)
                 {
                     actions.Children.Add(Action("Copy", K.Accent, delegate { Copy(e.Text); }));
                     if (e.Raw != e.Text) actions.Children.Add(Action("Copy original", K.Accent, delegate { Copy(e.Raw); }));
                 }
+                if (HasAudio(e))
+                {
+                    actions.Children.Add(AudioChip(e));
+                    actions.Children.Add(Action(e.Failed ? "Send again" : "Redo", K.Accent, delegate { Toast("Sending it again"); app.Retry(e); }));
+                    actions.Children.Add(Action("Show file", K.Accent, delegate
+                    {
+                        try { Process.Start("explorer.exe", "/select,\"" + e.AudioFile + "\""); } catch (Exception) { }
+                    }));
+                }
                 actions.Children.Add(Action("Delete", K.Muted, delegate
                 {
+                    StopAudio();
                     Store.DeleteAudio(e);
                     app.History.Remove(e);
                     Store.SaveHistory(app.History);
                     Reload();
                 }));
                 stack.Children.Add(actions);
+                if (HasAudio(e))
+                {
+                    var tip = K.Wrap("Drag the recording into any app or folder to keep it. " +
+                        (e.Failed ? "It stays here for 30 days so you can send it again." : "Old recordings get deleted on their own, you can change that in Settings."), 12, K.Muted);
+                    tip.Margin = new Thickness(0, 8, 0, 0);
+                    stack.Children.Add(tip);
+                }
                 if (!e.Failed && e.Raw != e.Text)
                 {
                     var orig = K.Wrap("What Whisper heard: " + e.Raw, 12.5, K.Muted);
@@ -359,11 +431,92 @@ namespace Yappity
             return card;
         }
 
+        static bool HasAudio(HistoryEntry e)
+        {
+            return !string.IsNullOrEmpty(e.AudioFile) && System.IO.File.Exists(e.AudioFile);
+        }
+
+        // ---- Playing and dragging recordings ----
+
+        System.Media.SoundPlayer player;
+        string playingId;
+        readonly DispatcherTimer playTimer = new DispatcherTimer();
+
+        // A small pill: click to play or stop, drag it out to copy the .wav file anywhere.
+        FrameworkElement AudioChip(HistoryEntry e)
+        {
+            bool playing = playingId == e.Id;
+            var bg = K.B(playing ? K.Accent : K.AccentSoft);
+            var chip = new Border { Background = bg, CornerRadius = new CornerRadius(12), Padding = new Thickness(10, 3, 12, 4), Margin = new Thickness(0, 0, 18, 6), Cursor = Cursors.Hand, Tag = "action" };
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            var icon = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse(playing ? "M0,0 L8,0 L8,8 L0,8 Z" : "M0,0 L8,4.5 L0,9 Z"),
+                Fill = K.B(playing ? Colors.White : K.Accent),
+                Width = 9, Height = 9, Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 7, 0), Tag = "action",
+            };
+            row.Children.Add(icon);
+            string len = e.Seconds < 60 ? "0:" + ((int)Math.Round(e.Seconds)).ToString("00") : ((int)e.Seconds / 60) + ":" + ((int)e.Seconds % 60).ToString("00");
+            var t = K.T(playing ? "Stop" : "Play  " + len, 12.5, playing ? Colors.White : K.Accent, FontWeights.SemiBold);
+            t.Tag = "action";
+            row.Children.Add(t);
+            chip.Child = row;
+
+            Point down = new Point();
+            bool pressed = false;
+            chip.PreviewMouseLeftButtonDown += delegate(object s, MouseButtonEventArgs ev) { down = ev.GetPosition(chip); pressed = true; ev.Handled = true; };
+            chip.PreviewMouseMove += delegate(object s, MouseEventArgs ev)
+            {
+                if (!pressed || ev.LeftButton != MouseButtonState.Pressed) return;
+                var p = ev.GetPosition(chip);
+                if (Math.Abs(p.X - down.X) < 6 && Math.Abs(p.Y - down.Y) < 6) return;
+                pressed = false;
+                var data = new DataObject(DataFormats.FileDrop, new[] { e.AudioFile });
+                DragDrop.DoDragDrop(chip, data, DragDropEffects.Copy);
+            };
+            chip.PreviewMouseLeftButtonUp += delegate(object s, MouseButtonEventArgs ev)
+            {
+                ev.Handled = true;
+                if (!pressed) return;
+                pressed = false;
+                if (playingId == e.Id) StopAudio(); else PlayAudio(e);
+                Reload();
+            };
+            return chip;
+        }
+
+        void PlayAudio(HistoryEntry e)
+        {
+            StopAudio();
+            try
+            {
+                player = new System.Media.SoundPlayer(e.AudioFile);
+                player.Play();
+                playingId = e.Id;
+                playTimer.Stop();
+                playTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, e.Seconds) + 0.3);
+                playTimer.Tick -= PlayDone;
+                playTimer.Tick += PlayDone;
+                playTimer.Start();
+            }
+            catch (Exception ex) { Store.Log("Couldn't play the recording: " + ex.Message); Toast("Couldn't play that one"); }
+        }
+
+        void PlayDone(object s, EventArgs ev) { StopAudio(); Reload(); }
+
+        public void StopAudio()
+        {
+            playTimer.Stop();
+            if (player != null) { try { player.Stop(); player.Dispose(); } catch (Exception) { } player = null; }
+            playingId = null;
+        }
+
         TextBlock Action(string text, Color color, Action click)
         {
             var t = K.T(text, 13, color, FontWeights.SemiBold);
             t.Tag = "action";
-            t.Margin = new Thickness(0, 0, 20, 0);
+            t.Margin = new Thickness(0, 2, 20, 8);
             t.Cursor = Cursors.Hand;
             t.MouseEnter += delegate { t.Opacity = 0.7; };
             t.MouseLeave += delegate { t.Opacity = 1; };
@@ -419,7 +572,8 @@ namespace Yappity
         readonly Border shortcutButton = new Border { Cursor = Cursors.Hand, Padding = new Thickness(2), CornerRadius = new CornerRadius(9) };
         readonly KeyCaps caps = new KeyCaps();
         readonly TextBlock shortcutHint = K.Wrap("", 12.5, K.Muted);
-        readonly Picker mode = new Picker(), output = new Picker(), bubble = new Picker(), speech = new Picker(), cleanup = new Picker(), language = new Picker(), theme = new Picker();
+        readonly Picker mode = new Picker(), output = new Picker(), bubble = new Picker(), speech = new Picker(), cleanup = new Picker(), language = new Picker(), theme = new Picker(), keep = new Picker();
+        readonly TextBlock keepHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock modeHint = K.Wrap("", 12.5, K.Muted), outputHint = K.Wrap("", 12.5, K.Muted), bubbleHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock speechHint = K.Wrap("", 12.5, K.Muted), cleanupHint = K.Wrap("", 12.5, K.Muted), languageHint = K.Wrap("", 12.5, K.Muted), themeHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock usage = K.Wrap("", 12.5, K.Muted);
@@ -443,6 +597,7 @@ namespace Yappity
             cleanup.SetChoices(Groq.CleanupModels);
             language.SetChoices(Groq.Languages);
             theme.SetChoices(Options.Themes);
+            keep.SetChoices(Options.KeepAudio);
 
             // Welcome banner when there's no key yet.
             if (string.IsNullOrEmpty(app.Settings.ApiKey)) page.Children.Add(Welcome());
@@ -521,6 +676,7 @@ namespace Yappity
             // Other
             page.Children.Add(Heading("Other"));
             var g4 = new Group();
+            g4.Add(Group.Row("Keep recordings", keepHint, keep));
             g4.Add(Group.Row("Theme", themeHint, theme));
             g4.Add(Group.Row("Start with Windows", K.Wrap("Yappity opens quietly in your tray when you sign in, so the shortcut always works.", 12.5, K.Muted), startup));
             page.Children.Add(g4);
@@ -535,7 +691,7 @@ namespace Yappity
             saveTimer.Tick += delegate { saveTimer.Stop(); Save(); };
             key.TextChanged += delegate { Changed(); };
             vocab.TextChanged += delegate { Changed(); };
-            foreach (var p in new[] { mode, output, bubble, speech, cleanup, language })
+            foreach (var p in new[] { mode, output, bubble, speech, cleanup, language, keep })
                 p.Changed += delegate { Hints(); Changed(); };
             theme.Changed += delegate
             {
@@ -558,15 +714,15 @@ namespace Yappity
             var g = new Grid();
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var img = K.Image("hello.png");
-            if (img != null)
+            if (K.Image("wave-0.png") != null)
             {
-                var pic = new Image { Source = img, Height = 120, Margin = new Thickness(0, -4, 16, -8) };
+                var pic = new Image { Height = 104, Margin = new Thickness(0, -2, 16, -2) };
                 RenderOptions.SetBitmapScalingMode(pic, BitmapScalingMode.HighQuality);
+                new FrameLoop(pic).Play("wave", 150, true);
                 g.Children.Add(pic);
             }
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(K.T("Hi, I'm Chatter-Chan!", 17, K.Text, FontWeights.Bold));
+            text.Children.Add(K.T("Hi, I'm Yappy-chan!", 17, K.Text, FontWeights.Bold));
             var body = K.Wrap("Paste your free Groq key below and you're ready. Then press " + app.ShortcutName + " anywhere, say something, and press it again. I'll type it for you.", 13, K.Muted);
             body.Margin = new Thickness(0, 5, 0, 0);
             text.Children.Add(body);
@@ -658,6 +814,7 @@ namespace Yappity
             cleanupHint.Text = cleanup.Selected.About;
             languageHint.Text = language.Selected.About;
             themeHint.Text = theme.Selected.About;
+            keepHint.Text = keep.Selected.About;
         }
 
         void Usage()
@@ -688,6 +845,7 @@ namespace Yappity
             cleanup.Value = s.CleanupModel;
             language.Value = s.Language;
             theme.Value = s.Theme;
+            keep.Value = s.KeepAudioDays.ToString();
             vocab.Text = s.Vocabulary;
             try { startup.IsOn = Store.StartsWithWindows; } catch (Exception) { }
             Status(string.IsNullOrEmpty(s.ApiKey) ? "Your key gets encrypted and stays on this PC." : "", K.Muted);
@@ -717,7 +875,10 @@ namespace Yappity
             s.CleanupModel = cleanup.Value;
             s.Language = language.Value;
             s.Vocabulary = vocab.Text.Trim();
+            int days;
+            if (int.TryParse(keep.Value, out days)) s.KeepAudioDays = days;
             app.ApplySettings();
+            app.PruneAudio();
             if (keyChanged)
                 Status(string.IsNullOrEmpty(s.ApiKey) ? "Your key was removed." : "Saved. Press Test to make sure Groq accepts it.", K.Muted);
             Usage();
