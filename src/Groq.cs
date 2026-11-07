@@ -50,12 +50,12 @@ namespace Yappity
 
         public static readonly Choice[] CleanupModels =
         {
-            new Choice("openai/gpt-oss-120b", "gpt-oss-120b",
-                "The bigger model. It's better at spotting false starts and repeated words without touching the rest of what you said. " + OssLimits),
-            new Choice("openai/gpt-oss-20b", "gpt-oss-20b",
-                "The smaller model. It's about a quarter of a second faster and does a good job on short, simple yaps. " + OssLimits),
             new Choice("qwen/qwen3.8-27b", "Qwen 3.8 27B",
-                "The fastest of the three, usually done in about a third of a second. It handles self-corrections well and keeps Tagalog words the way you said them. " + OssLimits),
+                "The fastest and most careful of the three, usually done in about a third of a second. It catches repeated words and self-corrections and keeps Tagalog words the way you said them. " + OssLimits),
+            new Choice("openai/gpt-oss-120b", "gpt-oss-120b",
+                "OpenAI's bigger open model. It's a little slower than Qwen and sometimes leaves a repeated word in, but it never changes what you meant. " + OssLimits),
+            new Choice("openai/gpt-oss-20b", "gpt-oss-20b",
+                "OpenAI's smaller open model. It's fine for short, simple yaps. " + OssLimits),
             new Choice("", "Off",
                 "You get exactly what Whisper heard, filler words and all. This doesn't use any of your cleanup limit."),
         };

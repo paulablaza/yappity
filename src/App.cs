@@ -313,7 +313,8 @@ namespace Yappity
         // free limit), and finally gives back the raw text so a yap never gets lost.
         static async Task<string> CleanupWithBackup(string key, string model, string raw)
         {
-            string backup = model == Groq.CleanupModels[0].Id ? Groq.CleanupModels[2].Id : Groq.CleanupModels[0].Id;
+            // Qwen falls back to gpt-oss-120b, and the gpt-oss models fall back to Qwen.
+            string backup = model == Groq.CleanupModels[0].Id ? Groq.CleanupModels[1].Id : Groq.CleanupModels[0].Id;
             foreach (string m in new[] { model, backup })
             {
                 try { return await Groq.Cleanup(key, m, raw); }
