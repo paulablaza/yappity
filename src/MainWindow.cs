@@ -59,6 +59,7 @@ namespace Yappity
 
         public static readonly Choice[] Styles =
         {
+            new Choice("raw", "Raw", "Exactly what Whisper heard, um's and all, with nothing changed. It's also the fastest, since there's no cleanup step, and it doesn't use any of your cleanup limit."),
             new Choice("clean", "Clean up", "Takes out the um, uh and false starts and fixes punctuation. The text comes out as one block, the way you said it."),
             new Choice("format", "Clean up and format", "Same cleanup, then lays it out for reading: when you list things, each one goes on its own line with a dash, and long yaps get split into short paragraphs. Still only your words. Works best with Paste it, since typing can't do line breaks."),
             new Choice("organize", "Organize", "Turns a long ramble into a clear message you can send as is. Every point becomes a full sentence on its own dash line, grouped by topic, and the repeats and \"never mind\" bits get dropped. This one rewords a little, so your exact words are always kept in History."),

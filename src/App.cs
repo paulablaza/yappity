@@ -12,7 +12,7 @@ namespace Yappity
     // hold key -> record -> Whisper -> optional cleanup -> paste -> history.
     internal sealed class App
     {
-        public const string Version = "0.2.1";
+        public const string Version = "0.2.2";
         const double MinSeconds = 0.35;
         const int MaxSeconds = 30 * 60;
         const int ChunkSeconds = 10 * 60; // Groq takes up to 25 MB per file, about 13 minutes of WAV
@@ -266,7 +266,7 @@ namespace Yappity
 
                 string text = raw;
                 string cleanupModel = Groq.Find(Groq.CleanupModels, Settings.CleanupModel).Id;
-                if (cleanupModel.Length > 0)
+                if (cleanupModel.Length > 0 && Settings.Style != "raw")
                 {
                     overlay.ShowWorking("Tidying up");
                     text = await CleanupWithBackup(key, cleanupModel, raw);
