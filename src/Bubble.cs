@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,7 +10,7 @@ using System.Windows.Threading;
 
 namespace Yappity
 {
-    // The floating pill with Chatter-Chan standing at its edge. While you talk she
+    // The floating pill with Yappy-chan at its edge. While you talk she
     // moves her mouth with your voice; then she writes, tidies up, and gives a
     // thumbs up. The bubble never takes focus and clicks pass straight through it.
     internal sealed class Bubble : Window

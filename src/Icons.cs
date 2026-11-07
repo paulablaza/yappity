@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -46,7 +46,7 @@ namespace Yappity
                 return Icon.FromHandle(bmp.GetHicon());
         }
 
-        // Tray icon: Chatter-Chan's face, with a small red (recording) or amber
+        // Tray icon: Yappy-chan's wink, with a small red (recording) or amber
         // (working) dot in the corner. Falls back to the drawn mic if the image is missing.
         public static Icon Tray(int size, Color dot)
         {
