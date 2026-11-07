@@ -4,12 +4,13 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Threading;
 
 namespace Yappity
 {
     // Lives in the system tray and runs the whole flow:
     // hold key -> record -> Whisper -> optional cleanup -> paste -> history.
-    internal sealed class App : ApplicationContext
+    internal sealed class App
     {
         public const string Version = "0.1.0";
         const double MinSeconds = 0.35;
@@ -23,11 +24,11 @@ namespace Yappity
         readonly NotifyIcon tray = new NotifyIcon();
         readonly KeyboardHook hook = new KeyboardHook();
         readonly Recorder recorder = new Recorder();
-        readonly Overlay overlay = new Overlay();
-        readonly Timer maxTimer = new Timer();
-        readonly Timer trimTimer = new Timer();
+        readonly Bubble overlay = new Bubble();
+        readonly DispatcherTimer maxTimer = new DispatcherTimer();
+        readonly DispatcherTimer trimTimer = new DispatcherTimer();
         readonly Icon idleIcon, recordingIcon, workingIcon;
-        MainForm window;
+        MainWindow window;
         DateTime startedAt;
         int busy;      // transcriptions in flight
         int session;   // bumps on each key press so a stale release is ignored
@@ -50,7 +51,7 @@ namespace Yappity
             UpdateTrayText();
 
             recorder.LevelChanged = overlay.PushLevel;
-            maxTimer.Interval = MaxSeconds * 1000;
+            maxTimer.Interval = TimeSpan.FromSeconds(MaxSeconds);
             maxTimer.Tick += delegate { maxTimer.Stop(); Finish(); };
 
             hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
@@ -63,11 +64,11 @@ namespace Yappity
             {
                 if (!recorder.IsRecording) return;
                 Discard();
-                overlay.ShowMessage("Cancelled", Overlay.Muted, 900);
+                overlay.ShowMessage("Cancelled", Bubble.Grey, 900);
             };
             hook.Install();
 
-            trimTimer.Interval = 4000;
+            trimTimer.Interval = TimeSpan.FromSeconds(4);
             trimTimer.Tick += delegate
             {
                 trimTimer.Stop();
@@ -98,7 +99,7 @@ namespace Yappity
             menu.Items.Add(Theme.Item("History", delegate { ShowWindow(false); }));
             menu.Items.Add(Theme.Item("Settings", delegate { ShowWindow(true); }));
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(Theme.Item("Quit Yappity", delegate { ExitThread(); }));
+            menu.Items.Add(Theme.Item("Quit Yappity", delegate { Quit(); }));
             tray.ContextMenuStrip = menu;
             if (old != null) old.Dispose();
         }
@@ -116,15 +117,17 @@ namespace Yappity
         {
             Theme.Refresh(Settings.Theme);
             BuildTrayMenu();
-            if (window != null && !window.IsDisposed)
+            if (window != null)
             {
-                var bounds = window.Bounds;
-                var oldWindow = window;
+                var old = window;
                 window = null;
                 ShowWindow(true);
-                window.StartPosition = FormStartPosition.Manual;
-                window.Bounds = bounds;
-                oldWindow.Close();
+                window.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
+                window.Left = old.Left;
+                window.Top = old.Top;
+                window.Width = old.Width;
+                window.Height = old.Height;
+                old.Close();
             }
         }
 
@@ -158,7 +161,7 @@ namespace Yappity
             session++;
             if (string.IsNullOrEmpty(Settings.ApiKey))
             {
-                overlay.ShowMessage("Add your Groq key in Settings first. It's free.", Overlay.Amber, 2500);
+                overlay.ShowMessage("Add your Groq key in Settings first. It's free.", Bubble.Amber, 2500);
                 ShowWindow(true);
                 return;
             }
@@ -169,7 +172,7 @@ namespace Yappity
             catch (Exception e)
             {
                 Store.Log(e.Message);
-                overlay.ShowMessage(e.Message, Overlay.Amber, 5000);
+                overlay.ShowMessage(e.Message, Bubble.Amber, 5000);
                 return;
             }
             startedAt = DateTime.UtcNow;
@@ -212,7 +215,7 @@ namespace Yappity
             }
             if (Recorder.Peak(pcm) < SilencePeak)
             {
-                overlay.ShowMessage("Didn't hear anything. Is your mic on?", Overlay.Muted, 2200);
+                overlay.ShowMessage("Didn't hear anything. Is your mic on?", Bubble.Grey, 2200);
                 SetTray(busy > 0 ? workingIcon : idleIcon);
                 return;
             }
@@ -233,7 +236,7 @@ namespace Yappity
                 string raw = await TranscribeAll(key, wav);
                 if (IsNothing(raw, seconds))
                 {
-                    overlay.ShowMessage("Didn't catch any words there.", Overlay.Muted, 2000);
+                    overlay.ShowMessage("Didn't catch any words there.", Bubble.Grey, 2000);
                     return;
                 }
 
@@ -264,18 +267,18 @@ namespace Yappity
 
                 if (!pasteIntoActiveWindow)
                 {
-                    overlay.ShowMessage("Done. It's in History now.", Overlay.Green, 1600);
+                    overlay.ShowMessage("Done. It's in History now.", Bubble.Green, 1600);
                     return;
                 }
                 OutputResult result = await Paster.Deliver(text, Settings.Output);
                 if (result == OutputResult.Typed || result == OutputResult.Pasted)
-                    overlay.ShowMessage("Done", Overlay.Green, 1100);
+                    overlay.ShowMessage("Done", Bubble.Green, 1100);
                 else if (result == OutputResult.SavedOnly)
-                    overlay.ShowMessage("Saved to History", Overlay.Green, 1400);
+                    overlay.ShowMessage("Saved to History", Bubble.Green, 1400);
                 else if (result == OutputResult.AdminWindow)
-                    overlay.ShowMessage("Windows won't let apps type into admin windows. Copy it from History.", Overlay.Amber, 4000);
+                    overlay.ShowMessage("Windows won't let apps type into admin windows. Copy it from History.", Bubble.Amber, 4000);
                 else
-                    overlay.ShowMessage("Couldn't type it here. Copy it from History.", Overlay.Amber, 3500);
+                    overlay.ShowMessage("Couldn't type it here. Copy it from History.", Bubble.Amber, 3500);
             }
             catch (GroqException e)
             {
@@ -294,12 +297,12 @@ namespace Yappity
                     entry.AudioFile = Store.SaveAudio(entry.Id, wav);
                 Store.SaveHistory(History);
                 RefreshWindow();
-                overlay.ShowMessage(e.Message + (e.CanRetry ? " Retry it from History." : ""), Overlay.Amber, 5000);
+                overlay.ShowMessage(e.Message + (e.CanRetry ? " Retry it from History." : ""), Bubble.Amber, 5000);
             }
             catch (Exception e)
             {
                 Store.Log("Unexpected error: " + e);
-                overlay.ShowMessage("That broke: " + e.Message, Overlay.Amber, 5000);
+                overlay.ShowMessage("That broke: " + e.Message, Bubble.Amber, 5000);
             }
             finally
             {
@@ -409,10 +412,10 @@ namespace Yappity
 
         public void ShowWindow(bool settings)
         {
-            if (window == null || window.IsDisposed)
+            if (window == null)
             {
-                var w = new MainForm(this);
-                w.FormClosed += delegate { if (window == w) window = null; ScheduleTrim(); };
+                var w = new MainWindow(this);
+                w.Closed += delegate { if (window == w) window = null; ScheduleTrim(); };
                 window = w;
             }
             window.ShowTab(settings);
@@ -420,10 +423,12 @@ namespace Yappity
 
         void RefreshWindow()
         {
-            if (window != null && !window.IsDisposed) window.ReloadHistory();
+            if (window != null) window.ReloadHistory();
         }
 
-        protected override void ExitThreadCore()
+        public void RefreshHistory() { RefreshWindow(); }
+
+        public void Quit()
         {
             hook.Dispose();
             hook.Recording = false;
@@ -431,8 +436,8 @@ namespace Yappity
             tray.Visible = false;
             tray.Dispose();
             overlay.Close();
-            if (window != null && !window.IsDisposed) window.Close();
-            base.ExitThreadCore();
+            if (window != null) window.Close();
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }

@@ -60,10 +60,21 @@ namespace Yappity
 
                 try
                 {
-                    var app = new App();
-                    if (Array.IndexOf(args, "--history") >= 0) app.ShowWindow(false);
-                    if (Array.IndexOf(args, "--settings") >= 0) app.ShowWindow(true);
-                    Application.Run(app);
+                    // WPF runs the message loop; the tray icon and keyboard hook live on the same thread.
+                    var wpf = new System.Windows.Application();
+                    wpf.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+                    wpf.DispatcherUnhandledException += delegate(object s, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+                    {
+                        Store.Log("UI error: " + e.Exception);
+                        e.Handled = true;
+                    };
+                    wpf.Startup += delegate
+                    {
+                        var app = new App();
+                        if (Array.IndexOf(args, "--history") >= 0) app.ShowWindow(false);
+                        if (Array.IndexOf(args, "--settings") >= 0) app.ShowWindow(true);
+                    };
+                    wpf.Run();
                 }
                 catch (Exception e)
                 {
@@ -112,30 +123,47 @@ namespace Yappity
 
         // Yappity.exe --bubble-test top|top-right|bottom... output.png
         // Shows the listening bubble for a moment and saves a screenshot of that screen area.
-        static int TestBubble(string position, string outPath)
+        // Captures the bubble in each state: listening, working and done.
+        static int TestBubble(string position, string outPrefix)
         {
-            Application.EnableVisualStyles();
-            var overlay = new Overlay();
-            overlay.Position = position;
-            overlay.ShowListening();
-            var rnd = new Random(1);
-            var until = DateTime.UtcNow.AddMilliseconds(1600);
-            while (DateTime.UtcNow < until)
+            var wpf = new System.Windows.Application();
+            wpf.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+            wpf.Startup += async delegate
             {
-                overlay.PushLevel((float)rnd.NextDouble() * 0.9f);
-                Application.DoEvents();
-                Thread.Sleep(30);
-            }
-            var b = overlay.Bounds;
-            b.Inflate(60, 30);
-            using (var bmp = new System.Drawing.Bitmap(b.Width, b.Height))
-            {
-                using (var g = System.Drawing.Graphics.FromImage(bmp)) g.CopyFromScreen(b.Location, System.Drawing.Point.Empty, b.Size);
-                bmp.Save(outPath);
-            }
-            File.WriteAllText(outPath + ".txt", "bounds=" + overlay.Bounds + " screen=" + Screen.FromPoint(Cursor.Position).WorkingArea);
-            overlay.Close();
+                K.Load();
+                var bubble = new Bubble();
+                bubble.Position = position;
+                var rnd = new Random(1);
+                var levels = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+                levels.Tick += delegate { bubble.PushLevel((float)(0.2 + rnd.NextDouble() * 0.7)); };
+                levels.Start();
+                bubble.ShowListening();
+                await System.Threading.Tasks.Task.Delay(1500);
+                Snap(bubble, outPrefix + "-listening.png");
+                levels.Stop();
+                bubble.ShowWorking("Tidying up");
+                await System.Threading.Tasks.Task.Delay(900);
+                Snap(bubble, outPrefix + "-working.png");
+                bubble.ShowMessage("Done", Bubble.Green, 3000);
+                await System.Threading.Tasks.Task.Delay(700);
+                Snap(bubble, outPrefix + "-done.png");
+                bubble.Close();
+                wpf.Shutdown();
+            };
+            wpf.Run();
             return 0;
+        }
+
+        static void Snap(System.Windows.Window w, string path)
+        {
+            var src = System.Windows.PresentationSource.FromVisual(w);
+            double sx = src.CompositionTarget.TransformToDevice.M11, sy = src.CompositionTarget.TransformToDevice.M22;
+            int x = (int)(w.Left * sx), y = (int)(w.Top * sy), width = (int)(w.ActualWidth * sx), height = (int)(w.ActualHeight * sy);
+            using (var bmp = new System.Drawing.Bitmap(width, height))
+            {
+                using (var g = System.Drawing.Graphics.FromImage(bmp)) g.CopyFromScreen(x, y, 0, 0, bmp.Size);
+                bmp.Save(path);
+            }
         }
 
         // Yappity.exe --record-test seconds output.wav
