@@ -65,14 +65,17 @@ namespace Yappity
                 var s = Store.LoadSettings();
                 byte[] wav = File.ReadAllBytes(wavPath);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                string raw = Groq.Transcribe(key, wav, s.Language, s.Vocabulary).GetAwaiter().GetResult();
+                string speechModel = Environment.GetEnvironmentVariable("YAPPITY_SPEECH") ?? s.SpeechModel;
+                string cleanModel = Environment.GetEnvironmentVariable("YAPPITY_CLEANUP") ?? s.CleanupModel;
+                string lang = Environment.GetEnvironmentVariable("YAPPITY_LANG") ?? s.Language;
+                string raw = Groq.Transcribe(key, speechModel, wav, lang, s.Vocabulary).GetAwaiter().GetResult();
                 long whisperMs = sw.ElapsedMilliseconds;
                 sw.Restart();
-                string clean = Groq.Cleanup(key, raw).GetAwaiter().GetResult();
+                string clean = cleanModel.Length > 0 ? Groq.Cleanup(key, cleanModel, raw).GetAwaiter().GetResult() : raw;
                 long cleanupMs = sw.ElapsedMilliseconds;
                 File.WriteAllText(outPath,
-                    "RAW (" + whisperMs + " ms): " + raw + Environment.NewLine +
-                    "CLEAN (" + cleanupMs + " ms): " + clean + Environment.NewLine, Encoding.UTF8);
+                    speechModel + " + " + cleanModel + Environment.NewLine + "RAW (" + whisperMs + " ms): " + raw + Environment.NewLine +
+                    "CLEAN (" + cleanupMs + " ms): " + clean + Environment.NewLine + "LEFT TODAY: " + Groq.Remaining(speechModel) + " recordings, " + Groq.Remaining(cleanModel) + " cleanups" + Environment.NewLine, Encoding.UTF8);
                 return 0;
             }
             catch (Exception e)

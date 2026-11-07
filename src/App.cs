@@ -54,12 +54,19 @@ namespace Yappity
 
             recorder.LevelChanged = overlay.PushLevel;
             maxTimer.Interval = MaxSeconds * 1000;
-            maxTimer.Tick += delegate { maxTimer.Stop(); OnReleased(); };
+            maxTimer.Tick += delegate { maxTimer.Stop(); Finish(); };
 
-            hook.Key = KeyboardHook.Find(Settings.HotkeyVk);
-            hook.Pressed += OnPressed;
-            hook.Released += OnReleased;
-            hook.Interrupted += OnInterrupted;
+            hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
+            hook.Pressed += Begin;
+            hook.Released += Finish;
+            hook.Toggled += delegate { if (recorder.IsRecording) Finish(); else Begin(); };
+            hook.Interrupted += Discard;
+            hook.Cancelled += delegate
+            {
+                if (!recorder.IsRecording) return;
+                Discard();
+                overlay.ShowMessage("Cancelled", Overlay.Muted, 900);
+            };
             hook.Install();
 
             trimTimer.Interval = 4000;
@@ -75,8 +82,7 @@ namespace Yappity
             }
             else
             {
-                tray.ShowBalloonTip(3000, "Yappity is on",
-                    "Hold " + hook.Key.Name + ", yap, let go. It types wherever your cursor is.", ToolTipIcon.None);
+                tray.ShowBalloonTip(3000, "Yappity is on", HowTo() + " It types wherever your cursor is.", ToolTipIcon.None);
                 ScheduleTrim();
             }
         }
@@ -90,20 +96,35 @@ namespace Yappity
         public void ApplySettings()
         {
             Store.SaveSettings(Settings);
-            hook.Key = KeyboardHook.Find(Settings.HotkeyVk);
+            hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
             UpdateTrayText();
+        }
+
+        public string ShortcutName { get { return KeyboardHook.Describe(Settings.ShortcutVk, Settings.ShortcutMods); } }
+
+        // One sentence on how to start a yap with the current settings.
+        public string HowTo()
+        {
+            return Settings.HoldMode
+                ? "Hold " + ShortcutName + " while you talk, then let go."
+                : "Press " + ShortcutName + " to start talking and press it again when you're done.";
         }
 
         void UpdateTrayText()
         {
-            tray.Text = "Yappity · hold " + hook.Key.Name + " to yap";
+            string t = "Yappity · " + (Settings.HoldMode ? "hold " : "press ") + ShortcutName;
+            tray.Text = t.Length > 63 ? t.Substring(0, 63) : t;
         }
+
+        // While the user records a new shortcut in Settings.
+        public void CaptureShortcut(Action<int, int> done) { hook.Capture(done); }
+        public void CancelCapture() { hook.CancelCapture(); }
 
         void SetTray(Icon icon) { tray.Icon = icon; }
 
         // ---- Recording ----
 
-        void OnPressed()
+        void Begin()
         {
             if (recorder.IsRecording) return;
             session++;
@@ -124,22 +145,25 @@ namespace Yappity
                 return;
             }
             startedAt = DateTime.UtcNow;
+            hook.Recording = true;
             maxTimer.Start();
             SetTray(recordingIcon);
             overlay.ShowListening();
         }
 
-        void OnInterrupted()
+        // Throws the recording away (Esc, or the key was part of a normal shortcut).
+        void Discard()
         {
-            // The key was used as part of a shortcut, not for dictation.
             if (!recorder.IsRecording) return;
+            session++;
             maxTimer.Stop();
+            hook.Recording = false;
             recorder.Stop();
             overlay.HideNow();
             SetTray(busy > 0 ? workingIcon : idleIcon);
         }
 
-        async void OnReleased()
+        async void Finish()
         {
             if (!recorder.IsRecording) return;
             int mine = session;
@@ -148,6 +172,7 @@ namespace Yappity
             if (mine != session || !recorder.IsRecording) return;
 
             maxTimer.Stop();
+            hook.Recording = false;
             byte[] pcm = recorder.Stop();
             double seconds = pcm.Length / (double)Recorder.BytesPerSecond;
 
@@ -177,7 +202,8 @@ namespace Yappity
             HistoryEntry entry = existing;
             try
             {
-                string raw = await Groq.Transcribe(key, wav, Settings.Language, Settings.Vocabulary);
+                string raw = await Groq.Transcribe(key, Groq.Find(Groq.SpeechModels, Settings.SpeechModel).Id, wav,
+                    Settings.Language, Settings.Vocabulary);
                 if (IsNothing(raw, seconds))
                 {
                     overlay.ShowMessage("Didn't catch any words there.", Overlay.Muted, 2000);
@@ -185,10 +211,11 @@ namespace Yappity
                 }
 
                 string text = raw;
-                if (Settings.Cleanup)
+                string cleanupModel = Groq.Find(Groq.CleanupModels, Settings.CleanupModel).Id;
+                if (cleanupModel.Length > 0)
                 {
                     overlay.ShowWorking("Tidying up");
-                    try { text = await Groq.Cleanup(key, raw); }
+                    try { text = await Groq.Cleanup(key, cleanupModel, raw); }
                     catch (GroqException e) { Store.Log("Cleanup skipped: " + e.Message); text = raw; }
                 }
                 text = text.Trim();
@@ -209,16 +236,20 @@ namespace Yappity
                 Store.SaveHistory(History);
                 RefreshWindow();
 
-                PasteResult result = await Paster.Paste(text,
-                    pasteIntoActiveWindow && Settings.AutoPaste, Settings.RestoreClipboard);
-                if (result == PasteResult.Pasted)
+                if (!pasteIntoActiveWindow)
+                {
+                    overlay.ShowMessage("Done. It's in History now.", Overlay.Green, 1600);
+                    return;
+                }
+                OutputResult result = await Paster.Deliver(text, Settings.Output);
+                if (result == OutputResult.Typed || result == OutputResult.Pasted)
                     overlay.ShowMessage("Done", Overlay.Green, 1100);
-                else if (result == PasteResult.CopiedOnly)
-                    overlay.ShowMessage(pasteIntoActiveWindow && Settings.AutoPaste
-                        ? "Copied. This app runs as admin, so press Ctrl+V yourself."
-                        : "Copied. Press Ctrl+V.", Overlay.Green, 2600);
+                else if (result == OutputResult.SavedOnly)
+                    overlay.ShowMessage("Saved to History", Overlay.Green, 1400);
+                else if (result == OutputResult.AdminWindow)
+                    overlay.ShowMessage("Windows won't let apps type into admin windows. Copy it from History.", Overlay.Amber, 4000);
                 else
-                    overlay.ShowMessage("Clipboard was busy. Your text is saved in History.", Overlay.Amber, 3500);
+                    overlay.ShowMessage("Couldn't type it here. Copy it from History.", Overlay.Amber, 3500);
             }
             catch (GroqException e)
             {
@@ -293,6 +324,7 @@ namespace Yappity
         protected override void ExitThreadCore()
         {
             hook.Dispose();
+            hook.Recording = false;
             if (recorder.IsRecording) recorder.Stop();
             tray.Visible = false;
             tray.Dispose();

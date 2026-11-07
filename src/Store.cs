@@ -11,22 +11,29 @@ namespace Yappity
     public sealed class Settings
     {
         public string ApiKeyProtected { get; set; }
-        public int HotkeyVk { get; set; }
-        public bool Cleanup { get; set; }
-        public bool AutoPaste { get; set; }
-        public bool RestoreClipboard { get; set; }
-        public string Language { get; set; }
+        public int ShortcutVk { get; set; }
+        public int ShortcutMods { get; set; }
+        public string Mode { get; set; }          // "toggle" or "hold"
+        public string Output { get; set; }        // "type", "paste" or "history"
+        public string SpeechModel { get; set; }
+        public string CleanupModel { get; set; }  // empty means no cleanup
+        public string Language { get; set; }      // empty = auto, "mixed-tl" = English + Tagalog, or a code
         public string Vocabulary { get; set; }
 
         public Settings()
         {
-            HotkeyVk = 0xA3; // Right Ctrl
-            Cleanup = true;
-            AutoPaste = true;
-            RestoreClipboard = true;
+            ShortcutVk = 0x4B; // K
+            ShortcutMods = KeyboardHook.ModCtrl | KeyboardHook.ModShift;
+            Mode = "toggle";
+            Output = "type";
+            SpeechModel = Groq.SpeechModels[0].Id;
+            CleanupModel = Groq.CleanupModels[0].Id;
             Language = "";
             Vocabulary = "";
         }
+
+        [ScriptIgnore]
+        public bool HoldMode { get { return Mode == "hold"; } }
 
         static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Yappity api key v1");
 

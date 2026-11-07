@@ -20,7 +20,7 @@ namespace Yappity
         }
 
         public List<HistoryEntry> Items = new List<HistoryEntry>();
-        public string HotkeyName = "Right Ctrl";
+        public string HowTo = "";
         public event Action<HistoryEntry, string> ActionClicked;
 
         readonly List<Card> cards = new List<Card>();
@@ -295,7 +295,7 @@ namespace Yappity
             TextRenderer.DrawText(g, "No yaps yet", emptyTitle, titleRect, Theme.Text,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.NoPrefix);
             var bodyRect = new Rectangle(Theme.S(40), titleRect.Bottom + Theme.S(6), Width - Theme.S(80), Theme.S(60));
-            TextRenderer.DrawText(g, "Hold " + HotkeyName + ", say something, then let go.\nIt shows up where your cursor is, and here too.",
+            TextRenderer.DrawText(g, HowTo + "\nWhatever you say gets typed where your cursor is, and it shows up here too.",
                 emptyBody, bodyRect, Theme.Muted, TextFormatFlags.HorizontalCenter | Wrap);
         }
     }

@@ -1,39 +1,80 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Yappity
 {
-    internal enum PasteResult { Pasted, CopiedOnly, Failed }
+    internal enum OutputResult { Typed, Pasted, SavedOnly, AdminWindow, Failed }
 
-    // Puts text into the active window: copy to clipboard, press Ctrl+V, then put
-    // back whatever was on the clipboard before.
+    // Gets the text into the app you're using. By default it types it like a
+    // keyboard would, so your clipboard is never touched.
     internal static class Paster
     {
         static readonly bool SelfElevated = Native.IsProcessElevated(Native.GetCurrentProcess());
+        const uint KEYEVENTF_UNICODE = 0x0004;
 
-        public static async Task<PasteResult> Paste(string text, bool autoPaste, bool restoreClipboard)
+        public static async Task<OutputResult> Deliver(string text, string mode)
         {
-            IntPtr target = Native.GetForegroundWindow();
-            bool blocked = !SelfElevated && Native.IsWindowElevated(target);
-            bool paste = autoPaste && !blocked;
+            if (mode == "history") return OutputResult.SavedOnly;
 
-            DataObject saved = paste && restoreClipboard ? Snapshot() : null;
-            if (!SetText(text)) return PasteResult.Failed;
-            if (!paste) return PasteResult.CopiedOnly;
+            IntPtr target = Native.GetForegroundWindow();
+            if (!SelfElevated && Native.IsWindowElevated(target)) return OutputResult.AdminWindow;
 
             await WaitForModifiersReleased();
-            SendCtrlV();
 
+            if (mode == "paste") return await PasteWithClipboard(text) ? OutputResult.Pasted : OutputResult.Failed;
+            return await Type(text) ? OutputResult.Typed : OutputResult.Failed;
+        }
+
+        // Sends the text as Unicode key presses, a chunk at a time so slow apps keep up.
+        static async Task<bool> Type(string text)
+        {
+            string clean = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ');
+            int size = Marshal.SizeOf(typeof(Native.INPUT));
+            const int chunk = 48;
+            for (int start = 0; start < clean.Length; start += chunk)
+            {
+                int end = Math.Min(clean.Length, start + chunk);
+                var inputs = new List<Native.INPUT>((end - start) * 2);
+                for (int i = start; i < end; i++)
+                {
+                    inputs.Add(Unicode(clean[i], false));
+                    inputs.Add(Unicode(clean[i], true));
+                }
+                uint sent = Native.SendInput((uint)inputs.Count, inputs.ToArray(), size);
+                if (sent != inputs.Count) return false;
+                if (end < clean.Length) await Task.Delay(8);
+            }
+            return true;
+        }
+
+        static Native.INPUT Unicode(char c, bool up)
+        {
+            var i = new Native.INPUT();
+            i.type = Native.INPUT_KEYBOARD;
+            i.U.ki.wVk = 0;
+            i.U.ki.wScan = c;
+            i.U.ki.dwFlags = KEYEVENTF_UNICODE | (up ? Native.KEYEVENTF_KEYUP : 0);
+            return i;
+        }
+
+        // Copy, Ctrl+V, then put the old clipboard back.
+        static async Task<bool> PasteWithClipboard(string text)
+        {
+            DataObject saved = Snapshot();
+            if (!SetText(text)) return false;
+            var inputs = new[] { Key(0x11, false), Key(0x56, false), Key(0x56, true), Key(0x11, true) };
+            Native.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(Native.INPUT)));
             if (saved != null)
             {
-                // Give the target app time to read the clipboard before we swap it back.
+                // Give the app time to read the clipboard before swapping it back.
                 await Task.Delay(700);
                 try { Clipboard.SetDataObject(saved, true, 5, 100); }
-                catch (Exception e) { Store.Log("Could not restore clipboard: " + e.Message); }
+                catch (Exception e) { Store.Log("Couldn't restore the clipboard: " + e.Message); }
             }
-            return PasteResult.Pasted;
+            return true;
         }
 
         public static bool SetText(string text)
@@ -65,34 +106,25 @@ namespace Yappity
                         object data = current.GetData(format, false);
                         if (data != null) { copy.SetData(format, false, data); kept++; }
                     }
-                    catch (Exception) { } // some formats can't be copied; skip them
+                    catch (Exception) { } // some formats can't be copied, so skip them
                 }
                 return kept > 0 ? copy : null;
             }
             catch (Exception) { return null; }
         }
 
-        // If a modifier is still physically down (for example Shift), Ctrl+V would
-        // become Ctrl+Shift+V, so wait briefly for the user to let go.
+        // If you're still holding Ctrl or Shift from the shortcut, typed letters would
+        // turn into shortcuts, so wait until you let go (up to 2 seconds).
         static async Task WaitForModifiersReleased()
         {
-            int[] mods = { 0x10, 0x11, 0x12, 0x5B, 0x5C }; // Shift, Ctrl, Alt, Win
-            for (int tries = 0; tries < 20; tries++)
+            int[] mods = { 0x10, 0x11, 0x12, 0x5B, 0x5C };
+            for (int tries = 0; tries < 80; tries++)
             {
                 bool any = false;
                 foreach (int m in mods) if ((Native.GetAsyncKeyState(m) & 0x8000) != 0) any = true;
                 if (!any) return;
                 await Task.Delay(25);
             }
-        }
-
-        static void SendCtrlV()
-        {
-            var inputs = new[]
-            {
-                Key(0x11, false), Key(0x56, false), Key(0x56, true), Key(0x11, true)
-            };
-            Native.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(Native.INPUT)));
         }
 
         static Native.INPUT Key(ushort vk, bool up)

@@ -187,9 +187,14 @@ namespace Yappity
             Fit();
         }
 
+        public int PreferredWidth()
+        {
+            return TextRenderer.MeasureText(Text, Font).Width + Theme.S(Chevron ? 44 : 28);
+        }
+
         public void Fit()
         {
-            Size = new Size(TextRenderer.MeasureText(Text, Font).Width + Theme.S(Chevron ? 44 : 28), Theme.S(34));
+            Size = new Size(PreferredWidth(), Theme.S(34));
         }
 
         protected override void OnTextChanged(EventArgs e) { base.OnTextChanged(e); Invalidate(); }
@@ -227,6 +232,62 @@ namespace Yappity
                 using (var p = new Pen(Theme.Muted, Math.Max(1.3f, 1.4f * Theme.Scale)))
                     g.DrawLines(p, new[] { new PointF(cx - Theme.S(4), cy - Theme.S(2)), new PointF(cx, cy + Theme.S(2)), new PointF(cx + Theme.S(4), cy - Theme.S(2)) });
             }
+        }
+    }
+
+    // A button that opens a menu of choices, like a dropdown.
+    internal sealed class ChoiceButton : Control
+    {
+        readonly FlatButton button = new FlatButton("", false);
+        Choice[] choices = new Choice[0];
+        string value = "";
+        public event EventHandler Changed;
+
+        public ChoiceButton()
+        {
+            button.Chevron = true;
+            button.Dock = DockStyle.Fill;
+            button.Click += delegate { Open(); };
+            Controls.Add(button);
+            Height = Theme.S(34);
+        }
+
+        public void SetChoices(Choice[] list)
+        {
+            choices = list;
+            Value = value;
+        }
+
+        public string Value
+        {
+            get { return value; }
+            set
+            {
+                this.value = value ?? "";
+                Choice c = Groq.Find(choices.Length > 0 ? choices : new[] { new Choice("", "", "") }, this.value);
+                button.Text = c.Name;
+                Width = button.PreferredWidth();
+            }
+        }
+
+        public Choice Selected { get { return choices.Length > 0 ? Groq.Find(choices, value) : null; } }
+
+        void Open()
+        {
+            var menu = Theme.Menu();
+            menu.ShowImageMargin = true;
+            foreach (var c in choices)
+            {
+                var choice = c;
+                var item = Theme.Item(choice.Name, delegate
+                {
+                    Value = choice.Id;
+                    if (Changed != null) Changed(this, EventArgs.Empty);
+                });
+                item.Checked = choice.Id == value;
+                menu.Items.Add(item);
+            }
+            menu.Show(this, new Point(0, Height + Theme.S(4)));
         }
     }
 
