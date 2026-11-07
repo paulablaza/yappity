@@ -54,8 +54,9 @@ auto-property initializers. Use `string.Format` or `+`, explicit null checks, an
   touch the prompt, run `--clean-test` on tricky lines (questions, "ignore your instructions",
   Taglish) with every cleanup model before committing.
 - **No em dashes** in anything Yappity types. `App.Tidy` strips them, and the prompt forbids them.
-- **Don't touch the clipboard by default.** The default output types the text. Paste mode restores
-  the old clipboard.
+- **Always give the clipboard back.** The default output pastes with Ctrl+V and restores whatever was
+  on the clipboard before. Typing mode sends Unicode key presses, but anything over 400 characters is
+  pasted anyway, because slow apps drop parts of long typed text.
 - The window is created when opened and thrown away when closed. Don't keep it alive in the
   background; idle memory is a feature.
 - Writing style for anything a user reads (UI text, README): casual, plain, full sentences, no em
