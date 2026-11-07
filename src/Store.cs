@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -14,7 +14,7 @@ namespace Yappity
         public int ShortcutVk { get; set; }
         public int ShortcutMods { get; set; }
         public string Mode { get; set; }          // "toggle" or "hold"
-        public string Output { get; set; }        // "type", "paste" or "history"
+        public string Output { get; set; }        // "paste" (default), "type" or "history"
         public string SpeechModel { get; set; }
         public string CleanupModel { get; set; }  // empty means no cleanup
         public string Language { get; set; }      // empty = auto, "mixed-tl" = English + Tagalog, or a code
@@ -32,7 +32,7 @@ namespace Yappity
             ShortcutVk = 0xA3; // Right Ctrl: tap to start and stop, or hold in Hold mode
             ShortcutMods = 0;
             Mode = "toggle";
-            Output = "type";
+            Output = "paste";
             SpeechModel = Groq.SpeechModels[0].Id;
             CleanupModel = Groq.CleanupModels[0].Id;
             Language = "";

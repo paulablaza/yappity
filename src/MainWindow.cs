@@ -26,10 +26,10 @@ namespace Yappity
 
         public static readonly Choice[] Outputs =
         {
-            new Choice("type", "Type it in",
-                "Yappity types the text into the app you're using, the same way your keyboard would. Really long yaps get pasted instead so no words get lost, and your clipboard is put back right after. Every yap still gets saved in History."),
             new Choice("paste", "Paste it",
-                "Yappity pastes the text with Ctrl+V and then puts back whatever you had copied before. It's a bit faster for really long yaps, but a few apps don't handle it well."),
+                "The text lands all at once with Ctrl+V, even if you talked for minutes, and whatever you had copied before gets put back right after. This works in almost every app. If one app ignores it, switch to Type it in."),
+            new Choice("type", "Type it in",
+                "Yappity types the text letter by letter like a keyboard, so it works in the rare apps that block pasting. It's slower, and anything over 400 characters still gets pasted so no words get lost."),
             new Choice("history", "History only",
                 "Nothing gets typed anywhere. Open History and double-click a yap whenever you want to copy it."),
         };

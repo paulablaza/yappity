@@ -39,7 +39,7 @@ to sign up for besides Groq.
     <td align="center" width="25%"><img src="docs/yappy-talk.gif" width="150"><br><b>You talk</b><br>Tap <kbd>Right Ctrl</kbd> and yap. Yappy-chan talks along with your voice.</td>
     <td align="center" width="25%"><img src="docs/yappy-type.gif" width="150"><br><b>She writes it down</b><br>Whisper Large v3 turns it into text, usually in about a second.</td>
     <td align="center" width="25%"><img src="docs/yappy-tidy.gif" width="150"><br><b>She tidies it up</b><br>The um, uh and you know get cleaned out. Your words stay yours.</td>
-    <td align="center" width="25%"><img src="docs/yappy-done.gif" width="150"><br><b>Done</b><br>The text gets typed right where your cursor is, in any app.</td>
+    <td align="center" width="25%"><img src="docs/yappy-done.gif" width="150"><br><b>Done</b><br>The text lands right where your cursor is, in any app.</td>
   </tr>
 </table>
 
@@ -64,7 +64,7 @@ sentences, never answers a question you dictate, never translates, and never use
 - **Fast.** Usually about a second from when you stop talking to when the text shows up.
 - **Tiny.** One `.exe` under 1 MB. Nothing to install, it uses the .NET that comes with Windows.
 - **Light.** About 2 MB of memory in Task Manager while it waits in your tray.
-- **Types like a keyboard.** Short yaps get typed in, long ones get pasted so not a single word gets dropped, and your clipboard is put back right after.
+- **Lands instantly.** The text gets pasted in one go, even after minutes of talking, and whatever you had copied before is put back right after. There's a typing mode for the rare app that blocks pasting.
 - **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
 - **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
 - **Your shortcut, your way.** <kbd>Right Ctrl</kbd> by default. Tap it to start and stop, or switch to Hold mode and hold it while you talk. Pick another one from the presets or record any keys you want. <kbd>Esc</kbd> cancels.
@@ -107,7 +107,7 @@ time you want the window back. Turn on **Start with Windows** in Settings if you
 | :--- | :--- |
 | Shortcut | <kbd>Right Ctrl</kbd> by default. Presets for Right Alt, Right Shift, Ctrl + Shift + K, Ctrl + Space, F9 and Pause, or record your own |
 | Mode | **Toggle** (tap to start, tap to stop) or **Hold** (hold while you talk). Using Right Ctrl in a normal shortcut like Ctrl + C still works |
-| When you're done | **Type it in** (default), **Paste it** with Ctrl+V, or **History only** |
+| When you're done | **Paste it** (default, your clipboard gets put back), **Type it in** like a keyboard, or **History only** |
 | Bubble | Top center (default), any corner, or bottom center |
 | Speech to text | Whisper Large v3 (most accurate) or Whisper Large v3 Turbo (a bit faster) |
 | Cleanup | Qwen 3.8 27B (default), gpt-oss-120b, gpt-oss-20b, or off |
@@ -187,8 +187,8 @@ All of the code is in this repo, and you can build it yourself in one command (s
 
 **It didn't type into an app.**
 Windows blocks normal apps from typing into apps that run as administrator. Yappity tells you when
-that happens, and the text is waiting in History. A few apps also prefer pasting, so try
-**When you're done: Paste it** for those.
+that happens, and the text is waiting in History. If an app ignores the paste, switch
+**When you're done** to **Type it in** for that one.
 
 **I talk in Taglish and Whisper translates some of it.**
 Set **Language** to **English + Tagalog**. It tells Whisper to expect both and keep each word as you
