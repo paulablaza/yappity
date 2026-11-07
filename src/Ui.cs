@@ -16,20 +16,25 @@ namespace Yappity
         public static float Scale = 1f;
         static string fontName = "Segoe UI";
 
-        static Theme() { Refresh(); }
+        static Theme() { Refresh(null); }
 
-        public static void Refresh()
+        // mode is "light", "dark", or anything else to follow the Windows setting.
+        public static void Refresh(string mode)
         {
             Dark = false;
-            try
+            if (mode == "dark") Dark = true;
+            else if (mode != "light")
             {
-                using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                try
                 {
-                    object v = k != null ? k.GetValue("AppsUseLightTheme") : null;
-                    Dark = v is int && (int)v == 0;
+                    using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                    {
+                        object v = k != null ? k.GetValue("AppsUseLightTheme") : null;
+                        Dark = v is int && (int)v == 0;
+                    }
                 }
+                catch (Exception) { }
             }
-            catch (Exception) { }
 
             using (var g = Graphics.FromHwnd(IntPtr.Zero)) Scale = g.DpiX / 96f;
             try

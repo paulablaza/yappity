@@ -1,5 +1,6 @@
 # Builds bin\Yappity.exe with the C# compiler that ships with Windows.
 # Nothing to install: run  powershell -ExecutionPolicy Bypass -File build.ps1
+param([string]$Out = 'bin\Yappity.exe')
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -26,6 +27,6 @@ if (-not (Test-Path assets\icon.ico)) {
     Remove-Item bin\icon-maker.exe
 }
 
-Compile 'bin\Yappity.exe' @('/win32icon:assets\icon.ico')
-$size = [math]::Round((Get-Item bin\Yappity.exe).Length / 1KB)
-Write-Host "Built bin\Yappity.exe ($size KB)"
+Compile $Out @('/win32icon:assets\icon.ico')
+$size = [math]::Round((Get-Item $Out).Length / 1KB)
+Write-Host "Built $Out ($size KB)"

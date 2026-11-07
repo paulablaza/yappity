@@ -21,8 +21,11 @@ namespace Yappity
         public string Vocabulary { get; set; }
         public string Bubble { get; set; }        // where the "Yap away" bubble shows up
 
+        public string Theme { get; set; }         // "system", "light" or "dark"
+
         public Settings()
         {
+            Theme = "system";
             Bubble = "top";
             ShortcutVk = 0x4B; // K
             ShortcutMods = KeyboardHook.ModCtrl | KeyboardHook.ModShift;

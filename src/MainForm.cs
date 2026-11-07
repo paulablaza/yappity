@@ -203,6 +203,13 @@ namespace Yappity
             new Choice("bottom-left", "Bottom left", "Shows up just above your taskbar in the bottom left corner."),
         };
 
+        static readonly Choice[] Themes =
+        {
+            new Choice("system", "Match Windows", "Yappity follows your Windows setting, so it switches between light and dark along with the rest of your PC."),
+            new Choice("light", "Light", "Always light, no matter what Windows is set to."),
+            new Choice("dark", "Dark", "Always dark, no matter what Windows is set to."),
+        };
+
         sealed class Row
         {
             public Label Title;
@@ -229,6 +236,8 @@ namespace Yappity
         readonly Label outputHint = MakeHint("");
         readonly ChoiceButton bubble = new ChoiceButton();
         readonly Label bubbleHint = MakeHint("");
+        readonly ChoiceButton theme = new ChoiceButton();
+        readonly Label themeHint = MakeHint("");
 
         readonly ChoiceButton speech = new ChoiceButton();
         readonly Label speechHint = MakeHint("");
@@ -299,6 +308,7 @@ namespace Yappity
             mode.SetChoices(Modes);
             output.SetChoices(Outputs);
             bubble.SetChoices(Bubbles);
+            theme.SetChoices(Themes);
             speech.SetChoices(Groq.SpeechModels);
             cleanup.SetChoices(Groq.CleanupModels);
             language.SetChoices(Groq.Languages);
@@ -328,6 +338,7 @@ namespace Yappity
             Add(null, null, null, MakeHint("Add names, brands or slang that Whisper keeps getting wrong, separated by commas. Whisper treats them as spelling hints, so they show up the way you write them."));
 
             Heading("Other", 18);
+            Add("Theme", theme, themeHint, null);
             Add(null, null, null, startup);
             Add(null, null, null, about);
 
@@ -341,6 +352,14 @@ namespace Yappity
             vocabInput.Box.TextChanged += delegate { Changed(); };
             foreach (var c in new[] { mode, output, bubble, speech, cleanup, language })
                 c.Changed += delegate { UpdateHints(); Changed(); };
+            theme.Changed += delegate
+            {
+                saveTimer.Stop();
+                Save();
+                app.Settings.Theme = theme.Value;
+                Store.SaveSettings(app.Settings);
+                app.ApplyTheme();
+            };
             startup.Changed += delegate
             {
                 try { Store.StartsWithWindows = startup.Checked; }
@@ -539,6 +558,7 @@ namespace Yappity
             modeHint.Text = mode.Selected.About;
             outputHint.Text = output.Selected.About;
             bubbleHint.Text = bubble.Selected.About;
+            themeHint.Text = theme.Selected.About;
             speechHint.Text = speech.Selected.About;
             cleanupHint.Text = cleanup.Selected.About;
             languageHint.Text = language.Selected.About;
@@ -571,6 +591,7 @@ namespace Yappity
             mode.Value = s.Mode;
             output.Value = s.Output;
             bubble.Value = s.Bubble;
+            theme.Value = s.Theme;
             speech.Value = s.SpeechModel;
             cleanup.Value = s.CleanupModel;
             language.Value = s.Language;

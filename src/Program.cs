@@ -17,6 +17,23 @@ namespace Yappity
                 Icons.WriteIco(args[1]);
                 return 0;
             }
+            if (args.Length >= 3 && args[0] == "--clean-test")
+            {
+                // Each line of the input file goes through cleanup on its own.
+                string key = Environment.GetEnvironmentVariable("GROQ_API_KEY");
+                string model = Environment.GetEnvironmentVariable("YAPPITY_CLEANUP") ?? Groq.CleanupModels[0].Id;
+                var sb = new StringBuilder();
+                foreach (string line in File.ReadAllLines(args[1], Encoding.UTF8))
+                {
+                    if (line.Trim().Length == 0) continue;
+                    string outText;
+                    try { outText = Groq.Cleanup(key, model, line).GetAwaiter().GetResult(); }
+                    catch (Exception e) { outText = "ERROR: " + e.Message; }
+                    sb.AppendLine("IN:  " + line).AppendLine("OUT: " + outText).AppendLine();
+                }
+                File.WriteAllText(args[2], sb.ToString(), Encoding.UTF8);
+                return 0;
+            }
             if (args.Length >= 3 && args[0] == "--bubble-test")
                 return TestBubble(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--test")
@@ -25,7 +42,9 @@ namespace Yappity
                 return TestRecord(double.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture), args[2]);
 
             bool first;
-            using (var mutex = new Mutex(true, @"Local\Yappity-single-instance", out first))
+            // One copy per data folder, so a test copy with YAPPITY_HOME can run next to the real one.
+            string instance = @"Local\Yappity-" + Store.Dir.ToLowerInvariant().GetHashCode().ToString("x");
+            using (var mutex = new Mutex(true, instance, out first))
             {
                 if (!first)
                 {

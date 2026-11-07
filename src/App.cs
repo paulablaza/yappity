@@ -42,12 +42,8 @@ namespace Yappity
             recordingIcon = Icons.Make(iconSize * 2, Icons.RecordingColor);
             workingIcon = Icons.Make(iconSize * 2, Icons.WorkingColor);
 
-            var menu = Theme.Menu();
-            menu.Items.Add(Theme.Item("History", delegate { ShowWindow(false); }));
-            menu.Items.Add(Theme.Item("Settings", delegate { ShowWindow(true); }));
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(Theme.Item("Quit Yappity", delegate { ExitThread(); }));
-            tray.ContextMenuStrip = menu;
+            Theme.Refresh(Settings.Theme);
+            BuildTrayMenu();
             tray.Icon = idleIcon;
             tray.Visible = true;
             tray.MouseClick += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) ShowWindow(false); };
@@ -95,12 +91,41 @@ namespace Yappity
             trimTimer.Start();
         }
 
+        void BuildTrayMenu()
+        {
+            var old = tray.ContextMenuStrip;
+            var menu = Theme.Menu();
+            menu.Items.Add(Theme.Item("History", delegate { ShowWindow(false); }));
+            menu.Items.Add(Theme.Item("Settings", delegate { ShowWindow(true); }));
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(Theme.Item("Quit Yappity", delegate { ExitThread(); }));
+            tray.ContextMenuStrip = menu;
+            if (old != null) old.Dispose();
+        }
+
         public void ApplySettings()
         {
             Store.SaveSettings(Settings);
             hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
             overlay.Position = Settings.Bubble ?? "top";
             UpdateTrayText();
+        }
+
+        // Light, dark or follow Windows. The window is rebuilt so every color updates.
+        public void ApplyTheme()
+        {
+            Theme.Refresh(Settings.Theme);
+            BuildTrayMenu();
+            if (window != null && !window.IsDisposed)
+            {
+                var bounds = window.Bounds;
+                var oldWindow = window;
+                window = null;
+                ShowWindow(true);
+                window.StartPosition = FormStartPosition.Manual;
+                window.Bounds = bounds;
+                oldWindow.Close();
+            }
         }
 
         public string ShortcutName { get { return KeyboardHook.Describe(Settings.ShortcutVk, Settings.ShortcutMods); } }
@@ -217,8 +242,7 @@ namespace Yappity
                 if (cleanupModel.Length > 0)
                 {
                     overlay.ShowWorking("Tidying up");
-                    try { text = await Groq.Cleanup(key, cleanupModel, raw); }
-                    catch (GroqException e) { Store.Log("Cleanup skipped: " + e.Message); text = raw; }
+                    text = await CleanupWithBackup(key, cleanupModel, raw);
                 }
                 text = text.Trim();
 
@@ -283,6 +307,19 @@ namespace Yappity
                 if (!recorder.IsRecording) SetTray(busy > 0 ? workingIcon : idleIcon);
                 ScheduleTrim();
             }
+        }
+
+        // Tries the chosen cleanup model, then one other model (each has its own
+        // free limit), and finally gives back the raw text so a yap never gets lost.
+        static async Task<string> CleanupWithBackup(string key, string model, string raw)
+        {
+            string backup = model == Groq.CleanupModels[0].Id ? Groq.CleanupModels[2].Id : Groq.CleanupModels[0].Id;
+            foreach (string m in new[] { model, backup })
+            {
+                try { return await Groq.Cleanup(key, m, raw); }
+                catch (GroqException e) { Store.Log("Cleanup with " + m + " failed: " + e.Message); }
+            }
+            return raw;
         }
 
         // Long recordings go to Groq in parts of up to 10 minutes, each cut at the
@@ -373,8 +410,9 @@ namespace Yappity
         {
             if (window == null || window.IsDisposed)
             {
-                window = new MainForm(this);
-                window.FormClosed += delegate { window = null; ScheduleTrim(); };
+                var w = new MainForm(this);
+                w.FormClosed += delegate { if (window == w) window = null; ScheduleTrim(); };
+                window = w;
             }
             window.ShowTab(settings);
         }
