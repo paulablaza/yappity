@@ -3,7 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Saywrite
+namespace Yappity
 {
     // Records the default microphone as 16 kHz mono 16-bit PCM, the format Whisper
     // works in. Uses the built-in Windows waveIn API.
@@ -74,7 +74,7 @@ namespace Saywrite
             running = true;
             worker = new Thread(Loop);
             worker.IsBackground = true;
-            worker.Name = "Saywrite recorder";
+            worker.Name = "Yappity recorder";
             worker.Start();
             Native.waveInStart(handle);
         }

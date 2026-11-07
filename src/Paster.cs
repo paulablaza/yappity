@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     internal enum PasteResult { Pasted, CopiedOnly, Failed }
 

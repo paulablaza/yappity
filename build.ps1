@@ -1,4 +1,4 @@
-# Builds bin\Saywrite.exe with the C# compiler that ships with Windows.
+# Builds bin\Yappity.exe with the C# compiler that ships with Windows.
 # Nothing to install: run  powershell -ExecutionPolicy Bypass -File build.ps1
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
@@ -26,6 +26,6 @@ if (-not (Test-Path assets\icon.ico)) {
     Remove-Item bin\icon-maker.exe
 }
 
-Compile 'bin\Saywrite.exe' @('/win32icon:assets\icon.ico')
-$size = [math]::Round((Get-Item bin\Saywrite.exe).Length / 1KB)
-Write-Host "Built bin\Saywrite.exe ($size KB)"
+Compile 'bin\Yappity.exe' @('/win32icon:assets\icon.ico')
+$size = [math]::Round((Get-Item bin\Yappity.exe).Length / 1KB)
+Write-Host "Built bin\Yappity.exe ($size KB)"

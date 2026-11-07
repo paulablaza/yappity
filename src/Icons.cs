@@ -4,7 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 
-namespace Saywrite
+namespace Yappity
 {
     // Draws the microphone icon in code so the app ships as a single file.
     internal static class Icons

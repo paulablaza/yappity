@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     // Lives in the system tray and runs the whole flow:
     // hold key -> record -> Whisper -> optional cleanup -> paste -> history.
@@ -45,7 +45,7 @@ namespace Saywrite
             menu.Items.Add(Theme.Item("History", delegate { ShowWindow(false); }));
             menu.Items.Add(Theme.Item("Settings", delegate { ShowWindow(true); }));
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(Theme.Item("Quit Saywrite", delegate { ExitThread(); }));
+            menu.Items.Add(Theme.Item("Quit Yappity", delegate { ExitThread(); }));
             tray.ContextMenuStrip = menu;
             tray.Icon = idleIcon;
             tray.Visible = true;
@@ -75,8 +75,8 @@ namespace Saywrite
             }
             else
             {
-                tray.ShowBalloonTip(3000, "Saywrite is running",
-                    "Hold " + hook.Key.Name + ", speak, then let go. Your words get typed where your cursor is.", ToolTipIcon.None);
+                tray.ShowBalloonTip(3000, "Yappity is on",
+                    "Hold " + hook.Key.Name + ", yap, let go. It types wherever your cursor is.", ToolTipIcon.None);
                 ScheduleTrim();
             }
         }
@@ -96,7 +96,7 @@ namespace Saywrite
 
         void UpdateTrayText()
         {
-            tray.Text = "Saywrite: hold " + hook.Key.Name + " to talk";
+            tray.Text = "Yappity · hold " + hook.Key.Name + " to yap";
         }
 
         void SetTray(Icon icon) { tray.Icon = icon; }
@@ -109,7 +109,7 @@ namespace Saywrite
             session++;
             if (string.IsNullOrEmpty(Settings.ApiKey))
             {
-                overlay.ShowMessage("Add your free Groq API key in Settings first", Overlay.Amber, 2500);
+                overlay.ShowMessage("Add your Groq key in Settings first. It's free.", Overlay.Amber, 2500);
                 ShowWindow(true);
                 return;
             }
@@ -159,7 +159,7 @@ namespace Saywrite
             }
             if (Recorder.Peak(pcm) < SilencePeak)
             {
-                overlay.ShowMessage("Didn't hear anything. Check your mic.", Overlay.Muted, 2200);
+                overlay.ShowMessage("Didn't hear anything. Is your mic on?", Overlay.Muted, 2200);
                 SetTray(busy > 0 ? workingIcon : idleIcon);
                 return;
             }
@@ -172,7 +172,7 @@ namespace Saywrite
         {
             busy++;
             SetTray(workingIcon);
-            overlay.ShowWorking("Transcribing");
+            overlay.ShowWorking("Writing it down");
             string key = Settings.ApiKey;
             HistoryEntry entry = existing;
             try
@@ -180,14 +180,14 @@ namespace Saywrite
                 string raw = await Groq.Transcribe(key, wav, Settings.Language, Settings.Vocabulary);
                 if (IsNothing(raw, seconds))
                 {
-                    overlay.ShowMessage("Didn't catch any words.", Overlay.Muted, 2000);
+                    overlay.ShowMessage("Didn't catch any words there.", Overlay.Muted, 2000);
                     return;
                 }
 
                 string text = raw;
                 if (Settings.Cleanup)
                 {
-                    overlay.ShowWorking("Cleaning up");
+                    overlay.ShowWorking("Tidying up");
                     try { text = await Groq.Cleanup(key, raw); }
                     catch (GroqException e) { Store.Log("Cleanup skipped: " + e.Message); text = raw; }
                 }
@@ -212,13 +212,13 @@ namespace Saywrite
                 PasteResult result = await Paster.Paste(text,
                     pasteIntoActiveWindow && Settings.AutoPaste, Settings.RestoreClipboard);
                 if (result == PasteResult.Pasted)
-                    overlay.ShowMessage("Pasted", Overlay.Green, 1100);
+                    overlay.ShowMessage("Done", Overlay.Green, 1100);
                 else if (result == PasteResult.CopiedOnly)
                     overlay.ShowMessage(pasteIntoActiveWindow && Settings.AutoPaste
-                        ? "Copied. This window is running as admin, so press Ctrl+V."
-                        : "Copied. Press Ctrl+V to paste.", Overlay.Green, 2600);
+                        ? "Copied. This app runs as admin, so press Ctrl+V yourself."
+                        : "Copied. Press Ctrl+V.", Overlay.Green, 2600);
                 else
-                    overlay.ShowMessage("Couldn't use the clipboard. Your text is in History.", Overlay.Amber, 3500);
+                    overlay.ShowMessage("Clipboard was busy. Your text is saved in History.", Overlay.Amber, 3500);
             }
             catch (GroqException e)
             {
@@ -237,12 +237,12 @@ namespace Saywrite
                     entry.AudioFile = Store.SaveAudio(entry.Id, wav);
                 Store.SaveHistory(History);
                 RefreshWindow();
-                overlay.ShowMessage(e.Message + (e.CanRetry ? " Saved in History to retry." : ""), Overlay.Amber, 5000);
+                overlay.ShowMessage(e.Message + (e.CanRetry ? " Retry it from History." : ""), Overlay.Amber, 5000);
             }
             catch (Exception e)
             {
                 Store.Log("Unexpected error: " + e);
-                overlay.ShowMessage("Something went wrong: " + e.Message, Overlay.Amber, 5000);
+                overlay.ShowMessage("That broke: " + e.Message, Overlay.Amber, 5000);
             }
             finally
             {

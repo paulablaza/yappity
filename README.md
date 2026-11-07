@@ -1,87 +1,122 @@
-# Saywrite
+# Yappity
 
-Hold a key, talk, let go. Your words get typed wherever your cursor is.
+Hold a key, yap, let go. Whatever you said gets typed where your cursor is.
 
-Saywrite is a tiny voice-dictation app for Windows. It uses [Groq](https://groq.com)'s free API with
-**Whisper Large v3** for speech to text and **gpt-oss-20b** to tidy the result: it removes "um", "uh",
-"you know", repeated words and false starts, and fixes punctuation, without rewriting what you said.
+Yappity is a tiny voice typing app for Windows. It runs on Groq's free API, so you bring your own key
+and pay nothing.
 
-- **Tiny.** About 100 KB, one `.exe`, nothing to install. It runs on the .NET Framework that already
-  ships with every Windows 10 and 11 PC.
-- **Light.** It sits in the tray using under 1 MB of memory in Task Manager while idle.
-- **Free.** Bring your own Groq API key. Groq's free plan covers about 2,000 dictations a day.
-- **Nothing gets lost.** Every dictation is kept in History, so if a paste didn't land you can copy it
-  again. Failed uploads keep their audio so you can retry.
-- **Private.** Your audio goes only to Groq. Your key is encrypted on your PC with Windows DPAPI.
+---
 
-## Get started
+## Why this exists
 
-1. Download `Saywrite.exe` from [Releases](../../releases) and run it. Windows may warn that the app
-   is unrecognized because it isn't code-signed: click **More info**, then **Run anyway**.
-2. Get a free API key at [console.groq.com/keys](https://console.groq.com/keys) and paste it into
-   Settings.
-3. Click into any text box, **hold Right Ctrl**, speak, and let go.
+I wanted something like Wispr Flow without the subscription. The open source ones I found either run
+Whisper on your own PC (slow if your PC isn't strong) or ship a whole browser engine just to show a
+settings window.
 
-While you hold the key a small "Listening" bubble shows your voice level. When you let go the text is
-transcribed, cleaned up and pasted, usually within a second or two.
+Yappity sends your audio to Groq instead, so it's fast even on a cheap laptop. The app itself is one
+100 KB `.exe`, and it sits in your tray using less than 1 MB of memory while you're not talking.
+
+---
+
+## What it does
+
+1. You hold **Right Ctrl** and talk. A small bubble near the bottom of your screen shows your voice level.
+2. You let go. **Whisper Large v3** turns it into text, usually in about a second.
+3. **gpt-oss-20b** tidies it up. It takes out the um, uh, you know, repeated words and false starts,
+   and fixes punctuation. If you say "at 3, no wait, at 4", you get "at 4". It doesn't rewrite your
+   sentences.
+4. Yappity pastes it into whatever app you're in, then puts your clipboard back the way it was.
+
+Every yap also lands in **History**. If a paste didn't go through, you can copy it from there. If your
+internet dropped, the audio is saved there too so you can retry it.
+
+---
+
+## Setup
+
+1. Download `Yappity.exe` from [Releases](../../releases) and run it.
+   Windows will probably say it doesn't recognize the app because it isn't code signed.
+   Click **More info**, then **Run anyway**.
+2. Get a free key at [console.groq.com/keys](https://console.groq.com/keys) and paste it in Settings.
+3. Click into any text box, hold Right Ctrl, and say something.
+
+Nothing else to install. It runs on the .NET Framework that already comes with Windows 10 and 11.
+
+---
 
 ## Settings
 
 | Setting | What it does |
-|---|---|
-| Hold to talk | The dictation key: Right Ctrl (default), Right Alt, Right Shift, F8, F9, F10, Scroll Lock or Pause. |
-| Language | Leave it empty to auto-detect, or set a code like `en`, `tl` or `es`. |
-| Clean up with AI | Removes filler words and fixes punctuation. Turn it off for Whisper's raw output. |
-| Paste automatically | Types into the active window. When off, the text is only copied. |
-| Keep my clipboard | Restores whatever you had copied before Saywrite pasted. |
-| Start with Windows | Launches Saywrite when you sign in. |
-| Words to spell right | Names and jargon Whisper should spell correctly, separated by commas. |
+| :--- | :--- |
+| Hold to yap | Pick your key. Right Ctrl, Right Alt, Right Shift, F8, F9, F10, Scroll Lock or Pause |
+| Language | Leave it empty and Whisper figures it out. Or type a code like `en`, `tl` or `es` |
+| Clean up with AI | Turn it off if you want exactly what Whisper heard |
+| Paste automatically | Turn it off if you'd rather paste it yourself |
+| Keep my clipboard | Puts back whatever you copied before Yappity pasted |
+| Start with Windows | Opens Yappity when you sign in |
+| Words to spell right | Names and slang Whisper keeps getting wrong, separated by commas |
 
-Pressing another key while holding the dictation key (like Right Ctrl+C) cancels the recording, so
-your normal shortcuts keep working.
+If you press another key while holding Right Ctrl (like Right Ctrl + C), Yappity cancels the recording,
+so your normal shortcuts still work.
 
-Windows does not let normal apps type into programs running as administrator. In those windows
-Saywrite copies the text and tells you to press Ctrl+V.
+Windows blocks normal apps from typing into apps running as admin. In those, Yappity copies the text
+and tells you to press Ctrl+V yourself.
 
-## Groq free plan limits
+---
 
-At the time of writing, for `whisper-large-v3`: 20 requests a minute, 2,000 a day, and 2 hours of
-audio per hour (8 per day). Each request counts as at least 10 seconds of audio. Check
-[console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits) for current numbers.
-If you hit a limit, Saywrite says so and keeps the recording in History to retry.
+## Free tier limits
 
-## Build from source
+Groq's free plan gives `whisper-large-v3` 20 requests a minute and 2,000 a day, with up to 2 hours of
+audio an hour. Each request counts as at least 10 seconds, so that works out to around 2,000 yaps a day.
+That's plenty for one person.
 
-No SDK needed. Windows already includes the C# compiler:
+*(Groq sets these and can change them. Check [console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits).)*
+
+If you hit the limit, Yappity tells you and keeps the recording in History so you can retry later.
+
+---
+
+## Privacy
+
+Your audio goes to Groq and nowhere else. Your key is encrypted on your PC with Windows DPAPI, so
+only your Windows account can read it. History stays on your PC in `%APPDATA%\Yappity`.
+
+---
+
+## Build it yourself
+
+You don't need Visual Studio or any SDK. Windows already has a C# compiler.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-This writes `bin\Saywrite.exe`. The code is in `src\`:
+That gives you `bin\Yappity.exe`.
 
-| File | Purpose |
-|---|---|
-| `App.cs` | Tray icon and the dictation flow |
-| `KeyboardHook.cs` | System-wide hold-to-talk key |
-| `Recorder.cs` | Microphone capture (16 kHz mono, via the Windows waveIn API) |
-| `Groq.cs` | Whisper and cleanup requests |
-| `Paster.cs` | Clipboard and Ctrl+V |
-| `Overlay.cs` | The "Listening" bubble |
-| `MainForm.cs`, `HistoryView.cs`, `Ui.cs` | History and Settings window |
-| `Store.cs` | Settings, history and logs in `%APPDATA%\Saywrite` |
+| File | What's in it |
+| :--- | :--- |
+| `src/App.cs` | Tray icon and the whole hold, record, transcribe, paste flow |
+| `src/KeyboardHook.cs` | Watches for your hold to talk key in any app |
+| `src/Recorder.cs` | Mic recording at 16 kHz mono using the Windows waveIn API |
+| `src/Groq.cs` | Whisper and cleanup requests |
+| `src/Paster.cs` | Clipboard and Ctrl+V |
+| `src/Overlay.cs` | The little bubble while you talk |
+| `src/MainForm.cs`, `src/HistoryView.cs`, `src/Ui.cs` | History and Settings window |
+| `src/Store.cs` | Settings, history and logs |
 
-Developer commands:
+Two commands for testing without the mic or hotkey:
 
 ```powershell
-# Send a WAV file through the same Whisper + cleanup path (uses GROQ_API_KEY or your saved key)
-bin\Saywrite.exe --test sample.wav result.txt
+# Send a WAV file through Whisper and cleanup (uses GROQ_API_KEY or your saved key)
+bin\Yappity.exe --test sample.wav result.txt
 
-# Record a few seconds from the microphone
-bin\Saywrite.exe --record-test 3 mic.wav
+# Record a few seconds from your mic
+bin\Yappity.exe --record-test 3 mic.wav
 ```
 
-Set `SAYWRITE_HOME` to keep settings and history in another folder.
+Set `YAPPITY_HOME` if you want settings and history in a different folder.
+
+---
 
 ## License
 

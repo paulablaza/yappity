@@ -4,10 +4,10 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     // History and Settings. Built only when opened and destroyed on close, so it
-    // uses no memory while Saywrite sits in the tray.
+    // uses no memory while Yappity sits in the tray.
     internal sealed class MainForm : Form
     {
         readonly App app;
@@ -25,7 +25,7 @@ namespace Saywrite
         public MainForm(App app)
         {
             this.app = app;
-            Text = "Saywrite";
+            Text = "Yappity";
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Theme.Bg;
             ForeColor = Theme.Text;
@@ -101,7 +101,7 @@ namespace Saywrite
             g.SmoothingMode = SmoothingMode.AntiAlias;
             int x = Theme.S(22);
             g.DrawImage(logo, x, (header.Height - logo.Height) / 2);
-            TextRenderer.DrawText(g, "Saywrite", titleFont,
+            TextRenderer.DrawText(g, "Yappity", titleFont,
                 new Rectangle(x + logo.Width + Theme.S(10), 0, Theme.S(200), header.Height), Theme.Text,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.NoPrefix);
         }
@@ -133,7 +133,7 @@ namespace Saywrite
             history.HotkeyName = KeyboardHook.Find(app.Settings.HotkeyVk).Name;
             history.SetItems(app.History);
             int n = app.History.Count;
-            footerText.Text = "Hold " + history.HotkeyName + " to talk" + (n > 0 ? "  ·  " + n + (n == 1 ? " dictation" : " dictations") : "");
+            footerText.Text = "Hold " + history.HotkeyName + " to yap" + (n > 0 ? "  ·  " + n + (n == 1 ? " yap" : " yaps") : "");
             clearLink.Visible = n > 0;
         }
 
@@ -145,7 +145,7 @@ namespace Saywrite
             }
             else if (action == "Retry")
             {
-                history.Toast("Sending again...");
+                history.Toast("Sending it again");
                 app.Retry(e);
             }
             else if (action == "Delete")
@@ -160,7 +160,7 @@ namespace Saywrite
         void ClearAll()
         {
             if (app.History.Count == 0) return;
-            if (MessageBox.Show(this, "Delete all " + app.History.Count + " dictations from history?", "Saywrite",
+            if (MessageBox.Show(this, "Delete all " + app.History.Count + " yaps? You can't undo this.", "Yappity",
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
             foreach (var e in app.History) Store.DeleteAudio(e);
             app.History.Clear();
@@ -181,18 +181,18 @@ namespace Saywrite
         readonly Label keyStatus = new Label();
 
         readonly Label dictHeading = Heading("Dictation");
-        readonly Label hotkeyLabel = RowLabel("Hold to talk");
+        readonly Label hotkeyLabel = RowLabel("Hold to yap");
         readonly FlatButton hotkeyBtn = new FlatButton("Right Ctrl", false);
         readonly Label langLabel = RowLabel("Language");
         readonly InputBox langInput = new InputBox(false);
-        readonly ToggleRow cleanup = new ToggleRow("Clean up with AI", "Removes filler words like um and you know, and fixes punctuation. Keeps your wording.");
-        readonly ToggleRow autoPaste = new ToggleRow("Paste automatically", "Types the text where your cursor is. When off, it's copied so you can paste it yourself.");
-        readonly ToggleRow restore = new ToggleRow("Keep my clipboard", "Puts back whatever you had copied before Saywrite pasted.");
+        readonly ToggleRow cleanup = new ToggleRow("Clean up with AI", "Takes out the um, uh, and you know, and fixes punctuation. Your words stay yours.");
+        readonly ToggleRow autoPaste = new ToggleRow("Paste automatically", "Types it where your cursor is. Turn it off if you'd rather paste it yourself.");
+        readonly ToggleRow restore = new ToggleRow("Keep my clipboard", "Puts back whatever you copied before Yappity pasted.");
         readonly ToggleRow startup = new ToggleRow("Start with Windows", null);
 
         readonly Label vocabHeading = Heading("Words to spell right");
         readonly InputBox vocabInput = new InputBox(true);
-        readonly Label vocabHint = Hint("Names, brands or jargon, separated by commas. Whisper uses them as spelling hints.");
+        readonly Label vocabHint = Hint("Names, brands, slang. Separate them with commas so Whisper spells them right.");
         readonly Label about = Hint("");
 
         readonly Timer saveTimer = new Timer();
@@ -216,16 +216,16 @@ namespace Saywrite
             testBtn.Click += async delegate
             {
                 testBtn.Enabled = false;
-                SetStatus("Checking...", Theme.Muted);
+                SetStatus("Checking", Theme.Muted);
                 try
                 {
                     await Groq.CheckKey(keyInput.Box.Text.Trim());
-                    SetStatus("Key works. You're ready to dictate.", Theme.Success);
+                    SetStatus("Key works. Go yap.", Theme.Success);
                 }
                 catch (GroqException ex) { SetStatus(ex.Message, Theme.Danger); }
                 testBtn.Enabled = true;
             };
-            keyLink.Text = "Get a free key at console.groq.com/keys";
+            keyLink.Text = "No key yet? Grab a free one at console.groq.com/keys";
             keyLink.LinkArea = new LinkArea(keyLink.Text.IndexOf("console"), "console.groq.com/keys".Length);
             keyLink.Font = Theme.F(9f);
             keyLink.ForeColor = Theme.Muted;
@@ -242,7 +242,7 @@ namespace Saywrite
             langInput.Width = Theme.S(110);
 
             vocabInput.Height = Theme.S(84);
-            vocabInput.Cue("e.g. Saywrite, Groq, Kubernetes");
+            vocabInput.Cue("Yappity, Groq, Barestack");
 
             Controls.AddRange(new Control[]
             {
@@ -252,7 +252,7 @@ namespace Saywrite
             });
 
             about.Text = "Speech: " + Groq.SpeechModel + "   ·   Cleanup: " + Groq.CleanupModel +
-                "\nBoth are on Groq's free plan. Your audio goes only to Groq.   ·   Saywrite " + App.Version;
+                "\nBoth free on Groq. Your audio only goes to Groq.   ·   Yappity " + App.Version;
 
             Load();
 
@@ -409,7 +409,7 @@ namespace Saywrite
             restore.Checked = s.RestoreClipboard;
             try { startup.Checked = Store.StartsWithWindows; } catch (Exception) { }
             if (string.IsNullOrEmpty(s.ApiKey))
-                SetStatus("Paste your key to start. It stays encrypted on this PC.", Theme.Muted);
+                SetStatus("Paste your key here. It stays encrypted on this PC.", Theme.Muted);
             loading = false;
         }
 
@@ -433,7 +433,7 @@ namespace Saywrite
             s.RestoreClipboard = restore.Checked;
             app.ApplySettings();
             if (keyChanged)
-                SetStatus(string.IsNullOrEmpty(s.ApiKey) ? "No key saved." : "Saved. Press Test to check it.", Theme.Muted);
+                SetStatus(string.IsNullOrEmpty(s.ApiKey) ? "Key removed." : "Saved. Hit Test to make sure it works.", Theme.Muted);
             var form = FindForm() as MainForm;
             if (form != null) form.ReloadHistory();
         }

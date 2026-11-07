@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     // The history list, drawn as cards. Click a card to open it and see its
     // actions; double-click to copy.
@@ -239,9 +239,9 @@ namespace Saywrite
                 {
                     int tw = TextRenderer.MeasureText(when, timeFont).Width;
                     var badge = new Rectangle(timeRect.Left + tw + Theme.S(6), timeRect.Top - Theme.S(1),
-                        TextRenderer.MeasureText("Not sent", timeFont).Width + Theme.S(12), timeFont.Height + Theme.S(3));
+                        TextRenderer.MeasureText("Didn't send", timeFont).Width + Theme.S(12), timeFont.Height + Theme.S(3));
                     Theme.FillRound(g, Color.FromArgb(Theme.Dark ? 50 : 30, Theme.Warn), Color.Empty, badge, badge.Height / 2f);
-                    TextRenderer.DrawText(g, "Not sent", timeFont, badge, Theme.Warn,
+                    TextRenderer.DrawText(g, "Didn't send", timeFont, badge, Theme.Warn,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
                 }
 
@@ -292,10 +292,10 @@ namespace Saywrite
             int cy = Height / 2 - Theme.S(50);
             g.DrawImage(emptyIcon, (Width - iconSize) / 2, cy - iconSize / 2);
             var titleRect = new Rectangle(0, cy + iconSize / 2 + Theme.S(18), Width, emptyTitle.Height + Theme.S(4));
-            TextRenderer.DrawText(g, "Nothing here yet", emptyTitle, titleRect, Theme.Text,
+            TextRenderer.DrawText(g, "No yaps yet", emptyTitle, titleRect, Theme.Text,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.NoPrefix);
             var bodyRect = new Rectangle(Theme.S(40), titleRect.Bottom + Theme.S(6), Width - Theme.S(80), Theme.S(60));
-            TextRenderer.DrawText(g, "Hold " + HotkeyName + ", speak, and let go.\nYour words appear where your cursor is, and here.",
+            TextRenderer.DrawText(g, "Hold " + HotkeyName + ", say something, then let go.\nIt shows up where your cursor is, and here too.",
                 emptyBody, bodyRect, Theme.Muted, TextFormatFlags.HorizontalCenter | Wrap);
         }
     }

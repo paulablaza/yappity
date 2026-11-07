@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-namespace Saywrite
+namespace Yappity
 {
     // Colors, sizes and fonts. Follows the Windows light/dark app setting.
     internal static class Theme

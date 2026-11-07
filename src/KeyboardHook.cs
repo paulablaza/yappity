@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace Saywrite
+namespace Yappity
 {
     // Watches the keyboard system-wide so the dictation key works in any app.
     // Fires Pressed when the key goes down, Released when it comes back up, and

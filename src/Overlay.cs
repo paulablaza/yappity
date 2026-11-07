@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     // The small pill near the bottom of the screen: "Listening" with live level
     // bars, "Transcribing", then a short result message. It never takes focus and
@@ -74,7 +74,7 @@ namespace Saywrite
         {
             for (int i = 0; i < Bars; i++) levels[i] = 0;
             mode = Mode.Listening;
-            text = "Listening";
+            text = "Yap away";
             dot = Red;
             Present(S(30) + Bars * S(5) + S(10) + Measure(text) + S(20), 0);
         }

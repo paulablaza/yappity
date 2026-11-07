@@ -6,7 +6,7 @@ using System.Text;
 using System.Web.Script.Serialization;
 using Microsoft.Win32;
 
-namespace Saywrite
+namespace Yappity
 {
     public sealed class Settings
     {
@@ -28,7 +28,7 @@ namespace Saywrite
             Vocabulary = "";
         }
 
-        static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Saywrite api key v1");
+        static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Yappity api key v1");
 
         // The key is encrypted with Windows DPAPI, so only this Windows user on this
         // PC can read it back.
@@ -71,10 +71,10 @@ namespace Saywrite
     {
         public const int MaxHistory = 200;
 
-        // SAYWRITE_HOME lets you keep data somewhere else (portable use, testing).
-        public static readonly string Dir = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SAYWRITE_HOME"))
-            ? Environment.GetEnvironmentVariable("SAYWRITE_HOME")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Saywrite");
+        // YAPPITY_HOME lets you keep data somewhere else (portable use, testing).
+        public static readonly string Dir = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))
+            ? Environment.GetEnvironmentVariable("YAPPITY_HOME")
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Yappity");
         public static readonly string AudioDir = Path.Combine(Dir, "failed-audio");
         static readonly string SettingsFile = Path.Combine(Dir, "settings.json");
         static readonly string HistoryFile = Path.Combine(Dir, "history.json");
@@ -160,14 +160,14 @@ namespace Saywrite
             get
             {
                 using (var k = Registry.CurrentUser.OpenSubKey(RunKey))
-                    return k != null && k.GetValue("Saywrite") != null;
+                    return k != null && k.GetValue("Yappity") != null;
             }
             set
             {
                 using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
                 {
-                    if (value) k.SetValue("Saywrite", "\"" + System.Windows.Forms.Application.ExecutablePath + "\"");
-                    else if (k.GetValue("Saywrite") != null) k.DeleteValue("Saywrite");
+                    if (value) k.SetValue("Yappity", "\"" + System.Windows.Forms.Application.ExecutablePath + "\"");
+                    else if (k.GetValue("Yappity") != null) k.DeleteValue("Yappity");
                 }
             }
         }

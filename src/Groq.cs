@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 
-namespace Saywrite
+namespace Yappity
 {
     internal sealed class GroqException : Exception
     {
@@ -32,7 +32,7 @@ namespace Saywrite
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             Http = new HttpClient();
             Http.Timeout = TimeSpan.FromSeconds(90);
-            Http.DefaultRequestHeaders.UserAgent.ParseAdd("Saywrite/" + App.Version);
+            Http.DefaultRequestHeaders.UserAgent.ParseAdd("Yappity/" + App.Version);
         }
 
         const string CleanupPrompt =
@@ -134,11 +134,11 @@ namespace Saywrite
             }
             catch (TaskCanceledException)
             {
-                throw new GroqException("Groq took too long to answer. Check your internet and try again.", true);
+                throw new GroqException("Groq took too long. Check your internet and try again.", true);
             }
             catch (HttpRequestException)
             {
-                throw new GroqException("Could not reach Groq. Check your internet connection.", true);
+                throw new GroqException("Can't reach Groq. Check your internet.", true);
             }
 
             using (res)
@@ -153,7 +153,7 @@ namespace Saywrite
                 int status = (int)res.StatusCode;
                 string detail = ErrorMessage(body);
                 if (status == 401)
-                    throw new GroqException("Groq rejected the API key. Check it in Settings.", false);
+                    throw new GroqException("Groq says your key is wrong. Check it in Settings.", false);
                 if (status == 429)
                 {
                     string wait = "";
@@ -161,12 +161,12 @@ namespace Saywrite
                     if (res.Headers.TryGetValues("retry-after", out values))
                     {
                         string v = values.FirstOrDefault();
-                        if (!string.IsNullOrEmpty(v)) wait = " Try again in about " + v + " seconds.";
+                        if (!string.IsNullOrEmpty(v)) wait = " Try again in " + v + " seconds.";
                     }
-                    throw new GroqException("Groq's free limit was reached." + wait, true);
+                    throw new GroqException("You hit Groq's free limit." + wait, true);
                 }
                 if (status == 413)
-                    throw new GroqException("That recording is too long for Groq (25 MB limit).", false);
+                    throw new GroqException("That one's too long for Groq. Keep it under about 13 minutes.", false);
                 throw new GroqException("Groq error " + status + (detail.Length > 0 ? ": " + detail : "."), status >= 500);
             }
         }

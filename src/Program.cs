@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace Saywrite
+namespace Yappity
 {
     internal static class Program
     {
@@ -23,12 +23,12 @@ namespace Saywrite
                 return TestRecord(double.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture), args[2]);
 
             bool first;
-            using (var mutex = new Mutex(true, @"Local\Saywrite-single-instance", out first))
+            using (var mutex = new Mutex(true, @"Local\Yappity-single-instance", out first))
             {
                 if (!first)
                 {
-                    MessageBox.Show("Saywrite is already running. Look for the microphone icon in the system tray.",
-                        "Saywrite", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Yappity is already running. Check your tray, it's the mic icon.",
+                        "Yappity", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return 0;
                 }
 
@@ -47,14 +47,14 @@ namespace Saywrite
                 catch (Exception e)
                 {
                     Store.Log("Startup failed: " + e);
-                    MessageBox.Show("Saywrite could not start: " + e.Message, "Saywrite", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Yappity couldn't start: " + e.Message, "Yappity", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return 1;
                 }
             }
             return 0;
         }
 
-        // Saywrite.exe --test input.wav output.txt
+        // Yappity.exe --test input.wav output.txt
         // Sends a WAV file through the same Whisper + cleanup path the app uses.
         static int TestFile(string wavPath, string outPath)
         {
@@ -82,7 +82,7 @@ namespace Saywrite
             }
         }
 
-        // Saywrite.exe --record-test seconds output.wav
+        // Yappity.exe --record-test seconds output.wav
         static int TestRecord(double seconds, string outPath)
         {
             try

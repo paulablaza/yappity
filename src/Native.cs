@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Saywrite
+namespace Yappity
 {
-    // Windows API declarations. Everything Saywrite does (hotkey, mic, paste) goes
+    // Windows API declarations. Everything Yappity does (hotkey, mic, paste) goes
     // straight through these, so no extra libraries are needed.
     internal static class Native
     {
@@ -112,7 +112,7 @@ namespace Saywrite
         [DllImport("kernel32.dll")]
         static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr min, IntPtr max);
 
-        // Hands unused memory back to Windows while Saywrite sits idle in the tray.
+        // Hands unused memory back to Windows while Yappity sits idle in the tray.
         public static void TrimMemory()
         {
             GC.Collect();
