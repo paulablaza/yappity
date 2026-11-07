@@ -20,6 +20,7 @@ namespace Yappity
         public string Language { get; set; }      // empty = auto, "mixed-tl" = English + Tagalog, or a code
         public string Vocabulary { get; set; }
         public string Bubble { get; set; }        // where the "Yap away" bubble shows up
+        public string Style { get; set; }         // "clean" or "format" (lists and paragraphs)
 
         public string Theme { get; set; }         // "system", "light" or "dark"
         public int KeepAudioDays { get; set; }    // how long recordings stay in History, 0 = delete after it works
@@ -29,6 +30,7 @@ namespace Yappity
             Theme = "system";
             KeepAudioDays = 7;
             Bubble = "top";
+            Style = "clean";
             ShortcutVk = 0xA3; // Right Ctrl: tap to start and stop, or hold in Hold mode
             ShortcutMods = 0;
             Mode = "toggle";
@@ -86,9 +88,26 @@ namespace Yappity
         public const int MaxHistory = 200;
 
         // YAPPITY_HOME lets you keep data somewhere else (portable use, testing).
-        public static readonly string Dir = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))
-            ? Environment.GetEnvironmentVariable("YAPPITY_HOME")
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Yappity");
+        // Where settings, history and recordings live:
+        //   YAPPITY_HOME if it's set (testing),
+        //   a YappityData folder next to the .exe if a "Yappity.portable" file sits beside it,
+        //   otherwise %APPDATA%\Yappity.
+        public static readonly string Dir = PickDir();
+
+        static string PickDir()
+        {
+            string env = Environment.GetEnvironmentVariable("YAPPITY_HOME");
+            if (!string.IsNullOrEmpty(env)) return env;
+            try
+            {
+                string exeDir = Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath);
+                if (File.Exists(Path.Combine(exeDir, "Yappity.portable"))) return Path.Combine(exeDir, "YappityData");
+            }
+            catch (Exception) { }
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Yappity");
+        }
+
+        public static bool IsPortable { get { return !Dir.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), StringComparison.OrdinalIgnoreCase) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME")); } }
         public static readonly string AudioDir = Path.Combine(Dir, "recordings");
         static readonly string SettingsFile = Path.Combine(Dir, "settings.json");
         static readonly string HistoryFile = Path.Combine(Dir, "history.json");

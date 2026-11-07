@@ -65,6 +65,7 @@ sentences, never answers a question you dictate, never translates, and never use
 - **Tiny.** One `.exe` under 1 MB. Nothing to install, it uses the .NET that comes with Windows.
 - **Light.** About 2 MB of memory in Task Manager while it waits in your tray.
 - **Lands instantly.** The text gets pasted in one go, even after minutes of talking, and whatever you had copied before is put back right after. There's a typing mode for the rare app that blocks pasting.
+- **Format mode.** Yap a list and it comes out as a list, one line per item with a dash, with long yaps split into short paragraphs. Still only your words.
 - **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
 - **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
 - **Your shortcut, your way.** <kbd>Right Ctrl</kbd> by default. Tap it to start and stop, or switch to Hold mode and hold it while you talk. Pick another one from the presets or record any keys you want. <kbd>Esc</kbd> cancels.
@@ -99,6 +100,15 @@ sentences, never answers a question you dictate, never translates, and never use
 That's the whole setup. Yappity lives in your tray and in the Start menu, so search for "Yappity" any
 time you want the window back. Turn on **Start with Windows** in Settings if you want it ready every time.
 
+### Installed or portable, your pick
+
+- **Installed:** press **Settings > Other > Install on this PC**. Yappity copies itself to your user
+  folder, shows up in the Start menu and in Windows Settings > Apps, and you can uninstall it from
+  there like any other app. No admin needed. From a terminal, `Yappity.exe --install` does the same.
+- **Portable:** just run `Yappity.exe` from wherever you saved it. Want everything on a USB stick?
+  Put an empty file called `Yappity.portable` next to the `.exe` and your settings, history and
+  recordings stay in a `YappityData` folder right beside it.
+
 ---
 
 ## Settings
@@ -111,6 +121,7 @@ time you want the window back. Turn on **Start with Windows** in Settings if you
 | Bubble | Top center (default), any corner, or bottom center |
 | Speech to text | Whisper Large v3 (most accurate) or Whisper Large v3 Turbo (a bit faster) |
 | Cleanup | Qwen 3.8 27B (default), gpt-oss-120b, gpt-oss-20b, or off |
+| Style | **Clean up** (one block, the way you said it) or **Clean up and format** (lists with dashes, short paragraphs) |
 | Language | Auto, **English + Tagalog** for Taglish, or one fixed language |
 | Words to spell right | Names and slang Whisper keeps getting wrong, separated by commas |
 | Keep recordings | 1, 3, 7 (default) or 30 days, or don't keep them. Failed ones always stay 30 days |
@@ -227,6 +238,7 @@ without a mic.
 | `src/Bubble.cs` | The floating bubble and Yappy-chan's animations in it |
 | `src/MainWindow.cs`, `src/Kit.cs` | History and Settings window (WPF) |
 | `src/Store.cs` | Settings, history, recordings and logs |
+| `src/Installer.cs` | Install, uninstall and portable mode |
 | `tools/make-art.py` | Turns the art in `design/yappy-chan` into the app images, icon and GIFs |
 | `tools/benchmark.ps1` | The memory benchmark above |
 

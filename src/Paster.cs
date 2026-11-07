@@ -70,7 +70,7 @@ namespace Yappity
         static async Task<bool> PasteWithClipboard(string text)
         {
             DataObject saved = Snapshot();
-            if (!SetText(text)) return false;
+            if (!SetText(text.Replace("\r\n", "\n").Replace("\n", "\r\n"))) return false;
             var inputs = new[] { Key(0x11, false), Key(0x56, false), Key(0x56, true), Key(0x11, true) };
             Native.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(Native.INPUT)));
             if (saved != null)

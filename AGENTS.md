@@ -41,7 +41,8 @@ auto-property initializers. Use `string.Format` or `+`, explicit null checks, an
 | `src/Bubble.cs` | The floating bubble with Yappy-chan, click-through and never focused |
 | `src/MainWindow.cs` | History and Settings window |
 | `src/Kit.cs` | Colors, animation helpers and the small WPF controls (toggle, picker, field, group) |
-| `src/Store.cs` | Settings, history, saved recordings and the log in `%APPDATA%\Yappity` |
+| `src/Store.cs` | Settings, history, saved recordings and the log in `%APPDATA%\Yappity` (or `YappityData` next to the exe in portable mode) |
+| `src/Installer.cs` | Install to `%LOCALAPPDATA%\Programs\Yappity`, Start menu, Installed apps entry, `--uninstall` |
 | `src/Ui.cs` | Light/dark detection and the tray menu colors |
 | `tools/make-art.py` | Turns the art in `design/` into `assets/` (needs Pillow) |
 
@@ -77,10 +78,14 @@ bin\Yappity.exe --record-test 3 mic.wav            # record from the mic
 bin\Yappity.exe --bubble-test top out              # renders out-listening.png, out-working.png, out-done.png
 bin\Yappity.exe --tray-icons tray.png              # the three tray icon states
 bin\Yappity.exe --settings                         # open straight to Settings
+bin\Yappity.exe --type-test text.txt out.txt       # delivers text into a test box and checks every character arrived
 ```
 
 Environment overrides for `--test`: `YAPPITY_SPEECH`, `YAPPITY_CLEANUP`, `YAPPITY_LANG`,
-`YAPPITY_CHUNK_SECONDS`.
+`YAPPITY_CHUNK_SECONDS`. `--clean-test` also takes `YAPPITY_FORMAT=1` to try format mode.
+
+Don't run `--install` or `--uninstall` while testing unless you mean it: they write to the real
+Start menu and the Installed apps list.
 
 The global shortcut ignores injected keystrokes, so you can't drive a real yap from a script. Ask a
 human to try the full flow after changing `KeyboardHook.cs`, `Recorder.cs` or `Paster.cs`.

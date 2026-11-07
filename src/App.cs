@@ -12,7 +12,7 @@ namespace Yappity
     // hold key -> record -> Whisper -> optional cleanup -> paste -> history.
     internal sealed class App
     {
-        public const string Version = "0.1.2";
+        public const string Version = "0.2.0";
         const double MinSeconds = 0.35;
         const int MaxSeconds = 30 * 60;
         const int ChunkSeconds = 10 * 60; // Groq takes up to 25 MB per file, about 13 minutes of WAV
@@ -139,27 +139,12 @@ namespace Yappity
             }
         }
 
-        // Puts Yappity in the Start menu so you can find it with Windows search.
-        // Skipped for test copies that use YAPPITY_HOME.
-        public void AddToStartMenu()
+        // Settings > Install: copy to %LOCALAPPDATA%\Programs\Yappity and restart from there.
+        public void InstallAndRestart()
         {
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))) return;
-            try
-            {
-                string exe = Application.ExecutablePath;
-                string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Yappity.lnk");
-                Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-                object shell = Activator.CreateInstance(shellType);
-                object link = shellType.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { lnk });
-                Type lt = link.GetType();
-                string current = (string)lt.InvokeMember("TargetPath", System.Reflection.BindingFlags.GetProperty, null, link, null);
-                if (File.Exists(lnk) && string.Equals(current, exe, StringComparison.OrdinalIgnoreCase)) return;
-                lt.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { exe });
-                lt.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { Path.GetDirectoryName(exe) });
-                lt.InvokeMember("Description", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { "Free voice typing" });
-                lt.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, link, null);
-            }
-            catch (Exception e) { Store.Log("Couldn't add the Start menu shortcut: " + e.Message); }
+            Installer.Install();
+            Installer.RelaunchInstalled();
+            Quit();
         }
 
         public string ShortcutName { get { return KeyboardHook.Describe(Settings.ShortcutVk, Settings.ShortcutMods); } }
@@ -353,13 +338,13 @@ namespace Yappity
 
         // Tries the chosen cleanup model, then one other model (each has its own
         // free limit), and finally gives back the raw text so a yap never gets lost.
-        static async Task<string> CleanupWithBackup(string key, string model, string raw)
+        async Task<string> CleanupWithBackup(string key, string model, string raw)
         {
             // Qwen falls back to gpt-oss-120b, and the gpt-oss models fall back to Qwen.
             string backup = model == Groq.CleanupModels[0].Id ? Groq.CleanupModels[1].Id : Groq.CleanupModels[0].Id;
             foreach (string m in new[] { model, backup })
             {
-                try { return await Groq.Cleanup(key, m, raw); }
+                try { return await Groq.Cleanup(key, m, raw, Settings.Style == "format"); }
                 catch (GroqException e) { Store.Log("Cleanup with " + m + " failed: " + e.Message); }
             }
             return raw;
@@ -439,6 +424,8 @@ namespace Yappity
             while (t.Contains(" ,")) t = t.Replace(" ,", ",");
             while (t.Contains(",,")) t = t.Replace(",,", ",");
             while (t.Contains("  ")) t = t.Replace("  ", " ");
+            t = t.Replace("\r\n", "\n");
+            while (t.Contains("\n\n\n")) t = t.Replace("\n\n\n", "\n\n");
             return t.Trim();
         }
 

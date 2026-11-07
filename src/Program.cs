@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -27,12 +27,27 @@ namespace Yappity
                 {
                     if (line.Trim().Length == 0) continue;
                     string outText;
-                    try { outText = Groq.Cleanup(key, model, line).GetAwaiter().GetResult(); }
+                    try { outText = Groq.Cleanup(key, model, line, Environment.GetEnvironmentVariable("YAPPITY_FORMAT") == "1").GetAwaiter().GetResult(); }
                     catch (Exception e) { outText = "ERROR: " + e.Message; }
                     sb.AppendLine("IN:  " + line).AppendLine("OUT: " + outText).AppendLine();
                 }
                 File.WriteAllText(args[2], sb.ToString(), Encoding.UTF8);
                 return 0;
+            }
+            if (args.Length >= 1 && args[0] == "--uninstall")
+                return Installer.Uninstall();
+            if (args.Length >= 1 && args[0] == "--install")
+            {
+                // Same as Settings > Install, then starts the installed copy.
+                Installer.Install();
+                System.Diagnostics.Process.Start(Installer.InstalledExe);
+                return 0;
+            }
+            // After installing, the new copy waits for the old one to quit before starting.
+            int waitFor = Array.IndexOf(args, "--wait-for");
+            if (waitFor >= 0 && waitFor + 1 < args.Length)
+            {
+                try { System.Diagnostics.Process.GetProcessById(int.Parse(args[waitFor + 1])).WaitForExit(10000); } catch (Exception) { }
             }
             if (args.Length >= 3 && args[0] == "--type-test")
             {
@@ -124,7 +139,7 @@ namespace Yappity
                         });
                         listener.IsBackground = true;
                         listener.Start();
-                        app.AddToStartMenu();
+                        Installer.EnsureStartMenu();
                         if (Array.IndexOf(args, "--history") >= 0) app.ShowWindow(false);
                         if (Array.IndexOf(args, "--settings") >= 0) app.ShowWindow(true);
                     };

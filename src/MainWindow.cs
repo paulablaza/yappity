@@ -57,6 +57,12 @@ namespace Yappity
             new Choice("custom", "Record my own", ""),
         };
 
+        public static readonly Choice[] Styles =
+        {
+            new Choice("clean", "Clean up", "Takes out the um, uh and false starts and fixes punctuation. The text comes out as one block, the way you said it."),
+            new Choice("format", "Clean up and format", "Same cleanup, then lays it out for reading: when you list things, each one goes on its own line with a dash, and long yaps get split into short paragraphs. Still only your words. Works best with Paste it, since typing can't do line breaks."),
+        };
+
         public static readonly Choice[] KeepAudio =
         {
             new Choice("1", "1 day", "Every recording stays in History for a day, so you can play it, send it again or drag it out. Recordings that failed to send stay for 30 days."),
@@ -586,7 +592,8 @@ namespace Yappity
         readonly KeyCaps caps = new KeyCaps();
         readonly Picker presets = new Picker();
         readonly TextBlock shortcutHint = K.Wrap("", 12.5, K.Muted);
-        readonly Picker mode = new Picker(), output = new Picker(), bubble = new Picker(), speech = new Picker(), cleanup = new Picker(), language = new Picker(), theme = new Picker(), keep = new Picker();
+        readonly Picker mode = new Picker(), output = new Picker(), bubble = new Picker(), speech = new Picker(), cleanup = new Picker(), language = new Picker(), theme = new Picker(), keep = new Picker(), style = new Picker();
+        readonly TextBlock styleHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock keepHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock modeHint = K.Wrap("", 12.5, K.Muted), outputHint = K.Wrap("", 12.5, K.Muted), bubbleHint = K.Wrap("", 12.5, K.Muted);
         readonly TextBlock speechHint = K.Wrap("", 12.5, K.Muted), cleanupHint = K.Wrap("", 12.5, K.Muted), languageHint = K.Wrap("", 12.5, K.Muted), themeHint = K.Wrap("", 12.5, K.Muted);
@@ -612,6 +619,7 @@ namespace Yappity
             language.SetChoices(Groq.Languages);
             theme.SetChoices(Options.Themes);
             keep.SetChoices(Options.KeepAudio);
+            style.SetChoices(Options.Styles);
 
             // Welcome banner when there's no key yet.
             if (string.IsNullOrEmpty(app.Settings.ApiKey)) page.Children.Add(Welcome());
@@ -686,6 +694,7 @@ namespace Yappity
             var g2 = new Group();
             g2.Add(Group.Row("Speech to text", speechHint, speech));
             g2.Add(Group.Row("Cleanup", cleanupHint, cleanup));
+            g2.Add(Group.Row("Style", styleHint, style));
             g2.Add(Group.Row("Language", languageHint, language));
             page.Children.Add(g2);
             usage.Margin = new Thickness(6, 8, 6, 0);
@@ -707,6 +716,7 @@ namespace Yappity
             var g4 = new Group();
             g4.Add(Group.Row("Keep recordings", keepHint, keep));
             g4.Add(Group.Row("Theme", themeHint, theme));
+            g4.Add(InstallRow());
             g4.Add(Group.Row("Start with Windows", K.Wrap("Yappity opens quietly in your tray when you sign in, so the shortcut always works.", 12.5, K.Muted), startup));
             page.Children.Add(g4);
 
@@ -720,7 +730,7 @@ namespace Yappity
             saveTimer.Tick += delegate { saveTimer.Stop(); Save(); };
             key.TextChanged += delegate { Changed(); };
             vocab.TextChanged += delegate { Changed(); };
-            foreach (var p in new[] { mode, output, bubble, speech, cleanup, language, keep })
+            foreach (var p in new[] { mode, output, bubble, speech, cleanup, language, keep, style })
                 p.Changed += delegate { Hints(); Changed(); };
             theme.Changed += delegate
             {
@@ -759,6 +769,24 @@ namespace Yappity
             g.Children.Add(text);
             card.Child = g;
             return card;
+        }
+
+        FrameworkElement InstallRow()
+        {
+            if (Installer.IsInstalledCopy)
+                return Group.Row("Installed", K.Wrap("Yappity is installed in your user folder and shows up in the Start menu. You can remove it any time from Windows Settings > Apps.", 12.5, K.Muted), null);
+            if (Store.IsPortable)
+                return Group.Row("Portable mode", K.Wrap("Settings, history and recordings live in the YappityData folder next to Yappity.exe, so you can carry it on a USB stick.", 12.5, K.Muted), null);
+            var button = new PillButton(Installer.IsInstalled ? "Update" : "Install", true);
+            button.Click += delegate
+            {
+                try { app.InstallAndRestart(); }
+                catch (Exception ex) { Store.Log("Install failed: " + ex); Status("Couldn't install: " + ex.Message, K.Danger); }
+            };
+            string text = Installer.IsInstalled
+                ? "An installed copy is already on this PC. Update it with this version and switch to it."
+                : "Right now Yappity runs from wherever you saved it. Installing copies it to your user folder, adds it to the Start menu, and lets you uninstall it from Windows Settings like any other app. No admin needed, and your settings come along.";
+            return Group.Row("Install on this PC", K.Wrap(text, 12.5, K.Muted), button);
         }
 
         static TextBlock Heading(string text)
@@ -851,6 +879,7 @@ namespace Yappity
             languageHint.Text = language.Selected.About;
             themeHint.Text = theme.Selected.About;
             keepHint.Text = keep.Selected.About;
+            styleHint.Text = style.Selected.About;
         }
 
         void Usage()
@@ -882,6 +911,7 @@ namespace Yappity
             language.Value = s.Language;
             theme.Value = s.Theme;
             keep.Value = s.KeepAudioDays.ToString();
+            style.Value = s.Style;
             vocab.Text = s.Vocabulary;
             try { startup.IsOn = Store.StartsWithWindows; } catch (Exception) { }
             Status(string.IsNullOrEmpty(s.ApiKey) ? "Your key gets encrypted and stays on this PC." : "", K.Muted);
@@ -913,6 +943,7 @@ namespace Yappity
             s.Vocabulary = vocab.Text.Trim();
             int days;
             if (int.TryParse(keep.Value, out days)) s.KeepAudioDays = days;
+            s.Style = style.Value;
             app.ApplySettings();
             app.PruneAudio();
             if (keyChanged)

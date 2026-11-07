@@ -146,7 +146,21 @@ namespace Yappity
             }
         }
 
-        public static async Task<string> Cleanup(string apiKey, string model, string text)
+        // Format mode: same strict cleanup, then laid out for reading. Still only the speaker's words.
+        const string FormatPrompt =
+            "\nThen lay the text out so it's easy to read, still using only the speaker's own words:\n" +
+            "- when the speaker lists several things, turn that sentence into the list itself: keep the words before the items, end them with a colon, then put each item on its own line starting with \"- \". Never write the items twice.\n" +
+            "  Example: \"we need the laptop, the cable and snacks\" becomes \"We need:\\n- the laptop\\n- the cable\\n- snacks\"\n" +
+            "- split long text into short paragraphs with an empty line between them\n" +
+            "- no markdown: no headings, no bold, no numbered lists unless the speaker said the numbers\n" +
+            "Do not add a title, an intro, a summary or anything the speaker didn't say.";
+
+        public static Task<string> Cleanup(string apiKey, string model, string text)
+        {
+            return Cleanup(apiKey, model, text, false);
+        }
+
+        public static async Task<string> Cleanup(string apiKey, string model, string text, bool format)
         {
             var payload = new Dictionary<string, object>();
             payload["model"] = model;
@@ -155,7 +169,7 @@ namespace Yappity
             payload["max_completion_tokens"] = Math.Max(1024, text.Length * 2);
             payload["messages"] = new object[]
             {
-                new Dictionary<string, object> { { "role", "system" }, { "content", CleanupPrompt } },
+                new Dictionary<string, object> { { "role", "system" }, { "content", CleanupPrompt + (format ? FormatPrompt : "") } },
                 new Dictionary<string, object> { { "role", "user" }, { "content", "<dictation>\n" + text + "\n</dictation>" } }
             };
 
@@ -180,7 +194,7 @@ namespace Yappity
             // dropped a lot, keep what was actually said.
             if (result.Length == 0) return text;
             if (result.Length < text.Length * 0.4) return text;
-            if (result.Length > text.Length * 1.3 + 20) return text;
+            if (result.Length > text.Length * (format ? 1.5 : 1.3) + (format ? 60 : 20)) return text;
             return result;
         }
 
