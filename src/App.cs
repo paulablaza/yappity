@@ -13,7 +13,8 @@ namespace Yappity
     {
         public const string Version = "0.1.0";
         const double MinSeconds = 0.35;
-        const int MaxSeconds = 10 * 60;
+        const int MaxSeconds = 30 * 60;
+        const int ChunkSeconds = 10 * 60; // Groq takes up to 25 MB per file, about 13 minutes of WAV
         const int SilencePeak = 250;
 
         public readonly Settings Settings;
@@ -57,6 +58,7 @@ namespace Yappity
             maxTimer.Tick += delegate { maxTimer.Stop(); Finish(); };
 
             hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
+            overlay.Position = Settings.Bubble ?? "top";
             hook.Pressed += Begin;
             hook.Released += Finish;
             hook.Toggled += delegate { if (recorder.IsRecording) Finish(); else Begin(); };
@@ -97,6 +99,7 @@ namespace Yappity
         {
             Store.SaveSettings(Settings);
             hook.Set(Settings.ShortcutVk, Settings.ShortcutMods, Settings.HoldMode);
+            overlay.Position = Settings.Bubble ?? "top";
             UpdateTrayText();
         }
 
@@ -202,8 +205,7 @@ namespace Yappity
             HistoryEntry entry = existing;
             try
             {
-                string raw = await Groq.Transcribe(key, Groq.Find(Groq.SpeechModels, Settings.SpeechModel).Id, wav,
-                    Settings.Language, Settings.Vocabulary);
+                string raw = await TranscribeAll(key, wav);
                 if (IsNothing(raw, seconds))
                 {
                     overlay.ShowMessage("Didn't catch any words there.", Overlay.Muted, 2000);
@@ -281,6 +283,67 @@ namespace Yappity
                 if (!recorder.IsRecording) SetTray(busy > 0 ? workingIcon : idleIcon);
                 ScheduleTrim();
             }
+        }
+
+        // Long recordings go to Groq in parts of up to 10 minutes, each cut at the
+        // quietest moment near the boundary so no word gets split in half.
+        Task<string> TranscribeAll(string key, byte[] wav)
+        {
+            return TranscribeLong(key, Groq.Find(Groq.SpeechModels, Settings.SpeechModel).Id, wav,
+                Settings.Language, Settings.Vocabulary, ChunkSeconds,
+                delegate(int part, int total) { overlay.ShowWorking("Writing it down, part " + part + " of " + total); });
+        }
+
+        public static async Task<string> TranscribeLong(string key, string model, byte[] wav, string language,
+            string vocabulary, int chunkSeconds, Action<int, int> progress)
+        {
+            byte[] pcm = new byte[Math.Max(0, wav.Length - 44)];
+            Buffer.BlockCopy(wav, Math.Min(44, wav.Length), pcm, 0, pcm.Length);
+            int chunkBytes = chunkSeconds * Recorder.BytesPerSecond;
+            if (pcm.Length <= chunkBytes)
+                return await Groq.Transcribe(key, model, wav, language, vocabulary);
+
+            var parts = new List<string>();
+            int start = 0, index = 0, total = (pcm.Length + chunkBytes - 1) / chunkBytes;
+            while (start < pcm.Length)
+            {
+                int end = pcm.Length;
+                if (pcm.Length - start > chunkBytes)
+                {
+                    // Look for a pause in the last 5 seconds (or last half) of this part.
+                    int window = Math.Min(5 * Recorder.BytesPerSecond, chunkBytes / 2);
+                    end = QuietestCut(pcm, start + chunkBytes - window, start + chunkBytes);
+                    end -= end % 2;
+                    if (end <= start) end = start + chunkBytes;
+                }
+                var piece = new byte[end - start];
+                Buffer.BlockCopy(pcm, start, piece, 0, piece.Length);
+                index++;
+                if (progress != null) progress(index, Math.Max(total, index));
+                string text = await Groq.Transcribe(key, model, Recorder.ToWav(piece), language, vocabulary);
+                if (!string.IsNullOrWhiteSpace(text)) parts.Add(text.Trim());
+                start = end;
+            }
+            return string.Join(" ", parts);
+        }
+
+        // Finds the quietest 100 ms between two byte offsets and returns where it starts.
+        static int QuietestCut(byte[] pcm, int from, int to)
+        {
+            int frame = Recorder.BytesPerSecond / 10;
+            int best = to;
+            double bestEnergy = double.MaxValue;
+            for (int f = Math.Max(0, from); f + frame <= Math.Min(to, pcm.Length); f += frame)
+            {
+                double e = 0;
+                for (int i = f; i + 1 < f + frame; i += 2)
+                {
+                    int s = (short)(pcm[i] | (pcm[i + 1] << 8));
+                    e += (double)s * s;
+                }
+                if (e < bestEnergy) { bestEnergy = e; best = f; }
+            }
+            return best;
         }
 
         // Whisper sometimes "hears" these in near-silence.

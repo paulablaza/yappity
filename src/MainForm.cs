@@ -193,6 +193,16 @@ namespace Yappity
                 "Nothing gets typed anywhere. Open History and double-click a yap whenever you want to copy it."),
         };
 
+        static readonly Choice[] Bubbles =
+        {
+            new Choice("top", "Top center", "Shows up at the top of your screen, like a little notch. It stays out of the way of taskbars, chat boxes and anything you're typing in at the bottom."),
+            new Choice("top-right", "Top right", "Shows up in the top right corner of your screen."),
+            new Choice("top-left", "Top left", "Shows up in the top left corner of your screen."),
+            new Choice("bottom", "Bottom center", "Shows up just above your taskbar in the middle of the screen."),
+            new Choice("bottom-right", "Bottom right", "Shows up just above your taskbar in the bottom right corner."),
+            new Choice("bottom-left", "Bottom left", "Shows up just above your taskbar in the bottom left corner."),
+        };
+
         sealed class Row
         {
             public Label Title;
@@ -217,6 +227,8 @@ namespace Yappity
         readonly Label modeHint = MakeHint("");
         readonly ChoiceButton output = new ChoiceButton();
         readonly Label outputHint = MakeHint("");
+        readonly ChoiceButton bubble = new ChoiceButton();
+        readonly Label bubbleHint = MakeHint("");
 
         readonly ChoiceButton speech = new ChoiceButton();
         readonly Label speechHint = MakeHint("");
@@ -286,6 +298,7 @@ namespace Yappity
             shortcutBtn.Click += delegate { StartCapture(); };
             mode.SetChoices(Modes);
             output.SetChoices(Outputs);
+            bubble.SetChoices(Bubbles);
             speech.SetChoices(Groq.SpeechModels);
             cleanup.SetChoices(Groq.CleanupModels);
             language.SetChoices(Groq.Languages);
@@ -302,6 +315,7 @@ namespace Yappity
             Add("Shortcut", shortcutBtn, shortcutHint, null);
             Add("Mode", mode, modeHint, null);
             Add("When you're done", output, outputHint, null);
+            Add("Bubble", bubble, bubbleHint, null);
 
             Heading("Models", 18);
             Add("Speech to text", speech, speechHint, null);
@@ -325,7 +339,7 @@ namespace Yappity
             saveTimer.Tick += delegate { saveTimer.Stop(); Save(); };
             keyInput.Box.TextChanged += delegate { Changed(); };
             vocabInput.Box.TextChanged += delegate { Changed(); };
-            foreach (var c in new[] { mode, output, speech, cleanup, language })
+            foreach (var c in new[] { mode, output, bubble, speech, cleanup, language })
                 c.Changed += delegate { UpdateHints(); Changed(); };
             startup.Changed += delegate
             {
@@ -524,6 +538,7 @@ namespace Yappity
         {
             modeHint.Text = mode.Selected.About;
             outputHint.Text = output.Selected.About;
+            bubbleHint.Text = bubble.Selected.About;
             speechHint.Text = speech.Selected.About;
             cleanupHint.Text = cleanup.Selected.About;
             languageHint.Text = language.Selected.About;
@@ -555,6 +570,7 @@ namespace Yappity
             ShowShortcut(null);
             mode.Value = s.Mode;
             output.Value = s.Output;
+            bubble.Value = s.Bubble;
             speech.Value = s.SpeechModel;
             cleanup.Value = s.CleanupModel;
             language.Value = s.Language;
@@ -583,6 +599,7 @@ namespace Yappity
             s.ShortcutMods = shortcutMods;
             s.Mode = mode.Value;
             s.Output = output.Value;
+            s.Bubble = bubble.Value;
             s.SpeechModel = speech.Value;
             s.CleanupModel = cleanup.Value;
             s.Language = language.Value;

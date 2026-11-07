@@ -54,6 +54,8 @@ namespace Yappity
                 "The bigger model. It's better at spotting false starts and repeated words without touching the rest of what you said. " + OssLimits),
             new Choice("openai/gpt-oss-20b", "gpt-oss-20b",
                 "The smaller model. It's about a quarter of a second faster and does a good job on short, simple yaps. " + OssLimits),
+            new Choice("qwen/qwen3.8-27b", "Qwen 3.8 27B",
+                "The fastest of the three, usually done in about a third of a second. It handles self-corrections well and keeps Tagalog words the way you said them. " + OssLimits),
             new Choice("", "Off",
                 "You get exactly what Whisper heard, filler words and all. This doesn't use any of your cleanup limit."),
         };
@@ -113,7 +115,7 @@ namespace Yappity
         const string CleanupPrompt =
             "You clean up dictated text. Someone spoke it aloud and a speech-to-text model wrote it down.\n" +
             "Return the same text with only these fixes:\n" +
-            "- remove filler words (um, uh, er, ah, like, you know, I mean, sort of) when they are only filler\n" +
+            "- remove filler words (um, uh, er, ah, like, you know, I mean, sort of, and Tagalog fillers like ano, parang, ayun, yung ano) when they are only filler\n" +
             "- remove stutters, accidentally repeated words and false starts\n" +
             "- when the speaker corrects themselves (\"at 3, no wait, at 4\"), keep only the correction\n" +
             "- fix punctuation, capitalization and obvious transcription mistakes\n" +
@@ -154,7 +156,7 @@ namespace Yappity
             var payload = new Dictionary<string, object>();
             payload["model"] = model;
             payload["temperature"] = 0.2;
-            payload["reasoning_effort"] = "low";
+            payload["reasoning_effort"] = model.StartsWith("qwen/") ? "none" : "low";
             payload["max_completion_tokens"] = Math.Max(1024, text.Length * 2);
             payload["messages"] = new object[]
             {

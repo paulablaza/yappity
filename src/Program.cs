@@ -17,6 +17,8 @@ namespace Yappity
                 Icons.WriteIco(args[1]);
                 return 0;
             }
+            if (args.Length >= 3 && args[0] == "--bubble-test")
+                return TestBubble(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--test")
                 return TestFile(args[1], args[2]);
             if (args.Length >= 3 && args[0] == "--record-test")
@@ -68,13 +70,17 @@ namespace Yappity
                 string speechModel = Environment.GetEnvironmentVariable("YAPPITY_SPEECH") ?? s.SpeechModel;
                 string cleanModel = Environment.GetEnvironmentVariable("YAPPITY_CLEANUP") ?? s.CleanupModel;
                 string lang = Environment.GetEnvironmentVariable("YAPPITY_LANG") ?? s.Language;
-                string raw = Groq.Transcribe(key, speechModel, wav, lang, s.Vocabulary).GetAwaiter().GetResult();
+                int chunk;
+                if (!int.TryParse(Environment.GetEnvironmentVariable("YAPPITY_CHUNK_SECONDS"), out chunk)) chunk = 600;
+                int parts = 0;
+                string raw = App.TranscribeLong(key, speechModel, wav, lang, s.Vocabulary, chunk,
+                    delegate(int part, int total) { parts = total; }).GetAwaiter().GetResult();
                 long whisperMs = sw.ElapsedMilliseconds;
                 sw.Restart();
                 string clean = cleanModel.Length > 0 ? Groq.Cleanup(key, cleanModel, raw).GetAwaiter().GetResult() : raw;
                 long cleanupMs = sw.ElapsedMilliseconds;
                 File.WriteAllText(outPath,
-                    speechModel + " + " + cleanModel + Environment.NewLine + "RAW (" + whisperMs + " ms): " + raw + Environment.NewLine +
+                    speechModel + " + " + cleanModel + "  (parts: " + Math.Max(1, parts) + ")" + Environment.NewLine + "RAW (" + whisperMs + " ms): " + raw + Environment.NewLine +
                     "CLEAN (" + cleanupMs + " ms): " + clean + Environment.NewLine + "LEFT TODAY: " + Groq.Remaining(speechModel) + " recordings, " + Groq.Remaining(cleanModel) + " cleanups" + Environment.NewLine, Encoding.UTF8);
                 return 0;
             }
@@ -83,6 +89,34 @@ namespace Yappity
                 File.WriteAllText(outPath, "ERROR: " + e.Message + Environment.NewLine, Encoding.UTF8);
                 return 1;
             }
+        }
+
+        // Yappity.exe --bubble-test top|top-right|bottom... output.png
+        // Shows the listening bubble for a moment and saves a screenshot of that screen area.
+        static int TestBubble(string position, string outPath)
+        {
+            Application.EnableVisualStyles();
+            var overlay = new Overlay();
+            overlay.Position = position;
+            overlay.ShowListening();
+            var rnd = new Random(1);
+            var until = DateTime.UtcNow.AddMilliseconds(1600);
+            while (DateTime.UtcNow < until)
+            {
+                overlay.PushLevel((float)rnd.NextDouble() * 0.9f);
+                Application.DoEvents();
+                Thread.Sleep(30);
+            }
+            var b = overlay.Bounds;
+            b.Inflate(60, 30);
+            using (var bmp = new System.Drawing.Bitmap(b.Width, b.Height))
+            {
+                using (var g = System.Drawing.Graphics.FromImage(bmp)) g.CopyFromScreen(b.Location, System.Drawing.Point.Empty, b.Size);
+                bmp.Save(outPath);
+            }
+            File.WriteAllText(outPath + ".txt", "bounds=" + overlay.Bounds + " screen=" + Screen.FromPoint(Cursor.Position).WorkingArea);
+            overlay.Close();
+            return 0;
         }
 
         // Yappity.exe --record-test seconds output.wav

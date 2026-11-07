@@ -43,7 +43,16 @@ namespace Yappity
             scale = DeviceDpi / 96f;
 
             anim.Interval = 40;
-            anim.Tick += delegate { tick++; Invalidate(); };
+            anim.Tick += delegate
+            {
+                tick++;
+                if (mode == Mode.Listening)
+                {
+                    var t = DateTime.UtcNow - listeningSince;
+                    text = "Yap away  " + (int)t.TotalMinutes + ":" + t.Seconds.ToString("00");
+                }
+                Invalidate();
+            };
             hideTimer.Tick += delegate { hideTimer.Stop(); HideNow(); };
         }
 
@@ -70,13 +79,18 @@ namespace Yappity
 
         int S(float v) { return (int)Math.Round(v * scale); }
 
+        // "top", "top-left", "top-right", "bottom", "bottom-left" or "bottom-right".
+        public string Position = "top";
+        DateTime listeningSince;
+
         public void ShowListening()
         {
             for (int i = 0; i < Bars; i++) levels[i] = 0;
             mode = Mode.Listening;
-            text = "Yap away";
+            listeningSince = DateTime.UtcNow;
+            text = "Yap away  0:00";
             dot = Red;
-            Present(S(30) + Bars * S(5) + S(10) + Measure(text) + S(20), 0);
+            Present(S(30) + Bars * S(5) + S(10) + Measure("Yap away  00:00") + S(20), 0);
         }
 
         public void ShowWorking(string message)
@@ -122,7 +136,12 @@ namespace Yappity
         {
             int height = S(40);
             Rectangle area = Screen.FromPoint(Cursor.Position).WorkingArea;
-            SetBounds(area.Left + (area.Width - width) / 2, area.Bottom - height - S(56), width, height);
+            int margin = S(18);
+            int x = Position.EndsWith("left") ? area.Left + margin
+                  : Position.EndsWith("right") ? area.Right - width - margin
+                  : area.Left + (area.Width - width) / 2;
+            int y = Position.StartsWith("bottom") ? area.Bottom - height - S(40) : area.Top + margin;
+            SetBounds(x, y, width, height);
             using (var path = Pill(new Rectangle(0, 0, width, height)))
             {
                 var old = Region;

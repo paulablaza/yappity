@@ -19,9 +19,11 @@ namespace Yappity
         public string CleanupModel { get; set; }  // empty means no cleanup
         public string Language { get; set; }      // empty = auto, "mixed-tl" = English + Tagalog, or a code
         public string Vocabulary { get; set; }
+        public string Bubble { get; set; }        // where the "Yap away" bubble shows up
 
         public Settings()
         {
+            Bubble = "top";
             ShortcutVk = 0x4B; // K
             ShortcutMods = KeyboardHook.ModCtrl | KeyboardHook.ModShift;
             Mode = "toggle";
