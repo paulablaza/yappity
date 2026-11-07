@@ -82,7 +82,9 @@ bin\Yappity.exe --type-test text.txt out.txt       # delivers text into a test b
 ```
 
 Environment overrides for `--test`: `YAPPITY_SPEECH`, `YAPPITY_CLEANUP`, `YAPPITY_LANG`,
-`YAPPITY_CHUNK_SECONDS`. `--clean-test` also takes `YAPPITY_FORMAT=1` to try format mode.
+`YAPPITY_CHUNK_SECONDS`. `--clean-test` also takes `YAPPITY_STYLE=format` or `YAPPITY_STYLE=organize` to try the other styles.
+Organize is the only style allowed to reword, so it has its own prompt (`OrganizePrompt` in `Groq.cs`)
+and a looser length check. Clean and format must keep the speaker's exact words.
 
 Don't run `--install` or `--uninstall` while testing unless you mean it: they write to the real
 Start menu and the Installed apps list.

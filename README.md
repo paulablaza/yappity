@@ -65,7 +65,7 @@ sentences, never answers a question you dictate, never translates, and never use
 - **Tiny.** One `.exe` under 1 MB. Nothing to install, it uses the .NET that comes with Windows.
 - **Light.** About 2 MB of memory in Task Manager while it waits in your tray.
 - **Lands instantly.** The text gets pasted in one go, even after minutes of talking, and whatever you had copied before is put back right after. There's a typing mode for the rare app that blocks pasting.
-- **Format mode.** Yap a list and it comes out as a list, one line per item with a dash, with long yaps split into short paragraphs. Still only your words.
+- **Three styles.** **Clean up** keeps your words in one block. **Clean up and format** turns a yapped list into dash lines and splits long yaps into paragraphs. **Organize** turns a 5 minute ramble into a clear message: every point as a full sentence on its own dash line, grouped by topic, repeats dropped. Your exact words always stay in History.
 - **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
 - **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
 - **Your shortcut, your way.** <kbd>Right Ctrl</kbd> by default. Tap it to start and stop, or switch to Hold mode and hold it while you talk. Pick another one from the presets or record any keys you want. <kbd>Esc</kbd> cancels.
@@ -121,7 +121,7 @@ time you want the window back. Turn on **Start with Windows** in Settings if you
 | Bubble | Top center (default), any corner, or bottom center |
 | Speech to text | Whisper Large v3 (most accurate) or Whisper Large v3 Turbo (a bit faster) |
 | Cleanup | Qwen 3.8 27B (default), gpt-oss-120b, gpt-oss-20b, or off |
-| Style | **Clean up** (one block, the way you said it) or **Clean up and format** (lists with dashes, short paragraphs) |
+| Style | **Clean up** (one block, the way you said it), **Clean up and format** (lists with dashes, short paragraphs) or **Organize** (a clear grouped message, every point a full sentence) |
 | Language | Auto, **English + Tagalog** for Taglish, or one fixed language |
 | Words to spell right | Names and slang Whisper keeps getting wrong, separated by commas |
 | Keep recordings | 1, 3, 7 (default) or 30 days, or don't keep them. Failed ones always stay 30 days |

@@ -27,7 +27,7 @@ namespace Yappity
                 {
                     if (line.Trim().Length == 0) continue;
                     string outText;
-                    try { outText = Groq.Cleanup(key, model, line, Environment.GetEnvironmentVariable("YAPPITY_FORMAT") == "1").GetAwaiter().GetResult(); }
+                    try { outText = Groq.Cleanup(key, model, line, Environment.GetEnvironmentVariable("YAPPITY_STYLE") ?? "clean").GetAwaiter().GetResult(); }
                     catch (Exception e) { outText = "ERROR: " + e.Message; }
                     sb.AppendLine("IN:  " + line).AppendLine("OUT: " + outText).AppendLine();
                 }
