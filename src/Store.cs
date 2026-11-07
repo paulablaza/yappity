@@ -29,8 +29,8 @@ namespace Yappity
             Theme = "system";
             KeepAudioDays = 7;
             Bubble = "top";
-            ShortcutVk = 0x4B; // K
-            ShortcutMods = KeyboardHook.ModCtrl | KeyboardHook.ModShift;
+            ShortcutVk = 0xA3; // Right Ctrl: tap to start and stop, or hold in Hold mode
+            ShortcutMods = 0;
             Mode = "toggle";
             Output = "type";
             SpeechModel = Groq.SpeechModels[0].Id;

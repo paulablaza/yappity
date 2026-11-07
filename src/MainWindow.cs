@@ -44,6 +44,19 @@ namespace Yappity
             new Choice("bottom-left", "Bottom left", "Shows up just above your taskbar in the bottom left corner."),
         };
 
+        // Quick picks for the shortcut. Id is "vk:mods".
+        public static readonly Choice[] Shortcuts =
+        {
+            new Choice("163:0", "Right Ctrl", ""),
+            new Choice("165:0", "Right Alt", ""),
+            new Choice("161:0", "Right Shift", ""),
+            new Choice("75:3", "Ctrl + Shift + K", ""),
+            new Choice("32:1", "Ctrl + Space", ""),
+            new Choice("120:0", "F9", ""),
+            new Choice("19:0", "Pause", ""),
+            new Choice("custom", "Record my own", ""),
+        };
+
         public static readonly Choice[] KeepAudio =
         {
             new Choice("1", "1 day", "Every recording stays in History for a day, so you can play it, send it again or drag it out. Recordings that failed to send stay for 30 days."),
@@ -571,6 +584,7 @@ namespace Yappity
         readonly TextBlock keyStatus = K.Wrap("", 12.5, K.Muted);
         readonly Border shortcutButton = new Border { Cursor = Cursors.Hand, Padding = new Thickness(2), CornerRadius = new CornerRadius(9) };
         readonly KeyCaps caps = new KeyCaps();
+        readonly Picker presets = new Picker();
         readonly TextBlock shortcutHint = K.Wrap("", 12.5, K.Muted);
         readonly Picker mode = new Picker(), output = new Picker(), bubble = new Picker(), speech = new Picker(), cleanup = new Picker(), language = new Picker(), theme = new Picker(), keep = new Picker();
         readonly TextBlock keepHint = K.Wrap("", 12.5, K.Muted);
@@ -646,7 +660,22 @@ namespace Yappity
             var g1 = new Group();
             shortcutButton.Child = caps;
             shortcutButton.MouseLeftButtonUp += delegate { if (capturing) StopCapture(); else StartCapture(); };
-            g1.Add(Group.Row("Shortcut", shortcutHint, shortcutButton));
+            presets.SetChoices(Options.Shortcuts);
+            presets.Margin = new Thickness(10, 0, 0, 0);
+            presets.Changed += delegate
+            {
+                if (presets.Value == "custom") { StartCapture(); return; }
+                var parts = presets.Value.Split(':');
+                shortcutVk = int.Parse(parts[0]);
+                shortcutMods = int.Parse(parts[1]);
+                StopCapture();
+                ShowShortcut(null);
+                Changed();
+            };
+            var shortcutRight = new StackPanel { Orientation = Orientation.Horizontal };
+            shortcutRight.Children.Add(shortcutButton);
+            shortcutRight.Children.Add(presets);
+            g1.Add(Group.Row("Shortcut", shortcutHint, shortcutRight));
             g1.Add(Group.Row("Mode", modeHint, mode));
             g1.Add(Group.Row("When you're done", outputHint, output));
             g1.Add(Group.Row("Bubble", bubbleHint, bubble));
@@ -723,7 +752,7 @@ namespace Yappity
             }
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
             text.Children.Add(K.T("Hi, I'm Yappy-chan!", 17, K.Text, FontWeights.Bold));
-            var body = K.Wrap("Paste your free Groq key below and you're ready. Then press " + app.ShortcutName + " anywhere, say something, and press it again. I'll type it for you.", 13, K.Muted);
+            var body = K.Wrap("Paste your free Groq key below and you're ready. " + app.HowTo() + " I'll type it wherever your cursor is.", 13, K.Muted);
             body.Margin = new Thickness(0, 5, 0, 0);
             text.Children.Add(body);
             Grid.SetColumn(text, 1);
@@ -791,6 +820,11 @@ namespace Yappity
         void ShowShortcut(string problem)
         {
             caps.Show(KeyboardHook.Describe(shortcutVk, shortcutMods));
+            string id = shortcutVk + ":" + shortcutMods;
+            bool known = false;
+            foreach (var c in Options.Shortcuts) if (c.Id == id) known = true;
+            presets.Value = known ? id : "custom";
+            if (!known) presets.Text = "Presets";
             if (problem != null)
             {
                 shortcutHint.Text = problem;
@@ -798,7 +832,9 @@ namespace Yappity
             }
             else
             {
-                shortcutHint.Text = "Click the keys to change them. Ctrl + Shift + K is the default.";
+                shortcutHint.Text = KeyboardHook.IsModifier(shortcutVk) && shortcutMods == 0
+                    ? "Tap it to start and tap it again to stop, or hold it in Hold mode. Using it in a normal shortcut, like Ctrl + C, still works. Pick another one from Presets, or click the keys to record your own."
+                    : "Pick one from Presets, or click the keys and press your own. Right Ctrl is the default.";
                 shortcutHint.Foreground = K.B(K.Muted);
             }
         }

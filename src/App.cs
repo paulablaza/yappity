@@ -86,7 +86,7 @@ namespace Yappity
             }
             else
             {
-                tray.ShowBalloonTip(3000, "Yappity is on", HowTo() + " It types wherever your cursor is.", ToolTipIcon.None);
+                tray.ShowBalloonTip(3000, "Yappity is on", HowTo() + " It types wherever your cursor is. Search for Yappity in the Start menu to open it again.", ToolTipIcon.None);
                 ScheduleTrim();
             }
         }
@@ -139,6 +139,29 @@ namespace Yappity
             }
         }
 
+        // Puts Yappity in the Start menu so you can find it with Windows search.
+        // Skipped for test copies that use YAPPITY_HOME.
+        public void AddToStartMenu()
+        {
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))) return;
+            try
+            {
+                string exe = Application.ExecutablePath;
+                string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Yappity.lnk");
+                Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+                object shell = Activator.CreateInstance(shellType);
+                object link = shellType.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { lnk });
+                Type lt = link.GetType();
+                string current = (string)lt.InvokeMember("TargetPath", System.Reflection.BindingFlags.GetProperty, null, link, null);
+                if (File.Exists(lnk) && string.Equals(current, exe, StringComparison.OrdinalIgnoreCase)) return;
+                lt.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { exe });
+                lt.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { Path.GetDirectoryName(exe) });
+                lt.InvokeMember("Description", System.Reflection.BindingFlags.SetProperty, null, link, new object[] { "Free voice typing" });
+                lt.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, link, null);
+            }
+            catch (Exception e) { Store.Log("Couldn't add the Start menu shortcut: " + e.Message); }
+        }
+
         public string ShortcutName { get { return KeyboardHook.Describe(Settings.ShortcutVk, Settings.ShortcutMods); } }
 
         // One sentence on how to start a yap with the current settings.
@@ -146,7 +169,7 @@ namespace Yappity
         {
             return Settings.HoldMode
                 ? "Hold " + ShortcutName + " while you talk, then let go."
-                : "Press " + ShortcutName + " to start talking and press it again when you're done.";
+                : (KeyboardHook.IsModifier(Settings.ShortcutVk) && Settings.ShortcutMods == 0 ? "Tap " : "Press ") + ShortcutName + " to start talking and again when you're done.";
         }
 
         void UpdateTrayText()

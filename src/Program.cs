@@ -62,10 +62,11 @@ namespace Yappity
             string instance = @"Local\Yappity-" + Store.Dir.ToLowerInvariant().GetHashCode().ToString("x");
             using (var mutex = new Mutex(true, instance, out first))
             {
+                var show = new EventWaitHandle(false, EventResetMode.AutoReset, instance + "-show");
                 if (!first)
                 {
-                    MessageBox.Show("Yappity is already running. Check your tray, it's the mic icon.",
-                        "Yappity", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Already running (maybe hidden in the tray), so ask that copy to open its window.
+                    show.Set();
                     return 0;
                 }
 
@@ -87,6 +88,14 @@ namespace Yappity
                     wpf.Startup += delegate
                     {
                         var app = new App();
+                        var listener = new Thread(delegate()
+                        {
+                            while (show.WaitOne())
+                                wpf.Dispatcher.BeginInvoke((Action)delegate { app.ShowWindow(false); });
+                        });
+                        listener.IsBackground = true;
+                        listener.Start();
+                        app.AddToStartMenu();
                         if (Array.IndexOf(args, "--history") >= 0) app.ShowWindow(false);
                         if (Array.IndexOf(args, "--settings") >= 0) app.ShowWindow(true);
                     };

@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/yappy-dance.gif" width="220" alt="Yappy-chan dancing">
+  <img src="docs/yappy-logo.png" width="190" alt="Yappy-chan, the Yappity mascot">
 </p>
 
 <h1 align="center">Yappity</h1>
 
 <p align="center">
   <b>Free voice typing for Windows.</b><br>
-  Press a shortcut, yap, press it again. Whatever you said gets typed where your cursor is.
+  Tap <kbd>Right Ctrl</kbd>, yap, tap it again. Whatever you said gets typed where your cursor is.
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ to sign up for besides Groq.
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="docs/yappy-talk.gif" width="150"><br><b>You talk</b><br>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> and yap. Yappy-chan talks along with your voice.</td>
+    <td align="center" width="25%"><img src="docs/yappy-talk.gif" width="150"><br><b>You talk</b><br>Tap <kbd>Right Ctrl</kbd> and yap. Yappy-chan talks along with your voice.</td>
     <td align="center" width="25%"><img src="docs/yappy-type.gif" width="150"><br><b>She writes it down</b><br>Whisper Large v3 turns it into text, usually in about a second.</td>
     <td align="center" width="25%"><img src="docs/yappy-tidy.gif" width="150"><br><b>She tidies it up</b><br>The um, uh and you know get cleaned out. Your words stay yours.</td>
     <td align="center" width="25%"><img src="docs/yappy-done.gif" width="150"><br><b>Done</b><br>The text gets typed right where your cursor is, in any app.</td>
@@ -67,7 +67,7 @@ sentences, never answers a question you dictate, never translates, and never use
 - **Types like a keyboard.** Your clipboard is never touched. Paste mode is there if you want it.
 - **Taglish friendly.** An English + Tagalog mode keeps every word in the language you said it in.
 - **Never loses a yap.** Every recording is saved. Play it, send it again, or drag it into any app or folder.
-- **Your shortcut, your way.** Toggle (press to start, press to stop) or hold to talk, with any keys you want. <kbd>Esc</kbd> cancels.
+- **Your shortcut, your way.** <kbd>Right Ctrl</kbd> by default. Tap it to start and stop, or switch to Hold mode and hold it while you talk. Pick another one from the presets or record any keys you want. <kbd>Esc</kbd> cancels.
 - **Long recordings.** Up to 30 minutes. Long ones get split at a pause and sent in parts.
 - **Backup model.** If the cleanup model is busy or out of free requests, Yappity tries another one, then falls back to exactly what Whisper heard.
 - **Light and dark mode,** with a one-click switch in the window.
@@ -94,10 +94,10 @@ sentences, never answers a question you dictate, never translates, and never use
    **More info**, then **Run anyway**. The code is all here if you want to check it first.
 3. Grab a free key at [console.groq.com/keys](https://console.groq.com/keys). It takes about a minute.
 4. Paste the key in Settings and press **Test**.
-5. Click into any text box, press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd>, say something,
-   and press it again.
+5. Click into any text box, tap <kbd>Right Ctrl</kbd>, say something, and tap it again.
 
-That's the whole setup. Turn on **Start with Windows** in Settings if you want it ready every time.
+That's the whole setup. Yappity lives in your tray and in the Start menu, so search for "Yappity" any
+time you want the window back. Turn on **Start with Windows** in Settings if you want it ready every time.
 
 ---
 
@@ -105,8 +105,8 @@ That's the whole setup. Turn on **Start with Windows** in Settings if you want i
 
 | Setting | What it does |
 | :--- | :--- |
-| Shortcut | Click it and press any keys. <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd> is the default |
-| Mode | **Toggle** (press to start, press to stop) or **Hold** (hold while you talk) |
+| Shortcut | <kbd>Right Ctrl</kbd> by default. Presets for Right Alt, Right Shift, Ctrl + Shift + K, Ctrl + Space, F9 and Pause, or record your own |
+| Mode | **Toggle** (tap to start, tap to stop) or **Hold** (hold while you talk). Using Right Ctrl in a normal shortcut like Ctrl + C still works |
 | When you're done | **Type it in** (default), **Paste it** with Ctrl+V, or **History only** |
 | Bubble | Top center (default), any corner, or bottom center |
 | Speech to text | Whisper Large v3 (most accurate) or Whisper Large v3 Turbo (a bit faster) |
