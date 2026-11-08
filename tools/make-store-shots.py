@@ -80,7 +80,29 @@ def bubble_shot(file):
     bg.convert('RGB').save(os.path.join(OUT, file))
 
 
+def logo_art(file, w, h):
+    # Store logos: 9:16 poster art (main logo on Windows) and 1:1 box art.
+    global W, H
+    saved = (W, H)
+    W, H = w, h
+    bg = background()
+    W, H = saved
+    logo = Image.open(os.path.join(DOCS, 'yappy-logo.png')).convert('RGBA')
+    size = int(min(w, h) * 0.62)
+    logo = logo.resize((size, size), Image.LANCZOS)
+    top = (h - size) // 2 - int(h * 0.06)
+    bg.alpha_composite(logo, ((w - size) // 2, top))
+    d = ImageDraw.Draw(bg)
+    tf = font('segoeuib.ttf', int(min(w, h) * 0.13))
+    text = 'Yappity'
+    tw = d.textlength(text, font=tf)
+    d.text(((w - tw) / 2, top + size + int(h * 0.03)), text, font=tf, fill='white')
+    bg.convert('RGB').save(os.path.join(OUT, file))
+
+
 os.makedirs(OUT, exist_ok=True)
+logo_art('poster-9x16.png', 720, 1080)
+logo_art('boxart-1x1.png', 1080, 1080)
 window_shot('screenshot-1.png', 'welcome-light.png', 'Free voice typing\nfor Windows', 'Tap Right Ctrl, talk, tap it again.\nYour words land wherever\nyour cursor is.')
 bubble_shot('screenshot-2.png')
 window_shot('screenshot-3.png', 'history-dark.png', 'Never lose a yap', 'Every recording is saved. Play it,\nsend it again, or drag it into\nany app or folder.')
