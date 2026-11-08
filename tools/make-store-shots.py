@@ -100,7 +100,22 @@ def logo_art(file, w, h):
     bg.convert('RGB').save(os.path.join(OUT, file))
 
 
+def tile(size):
+    # 1:1 app tile icon for the Store (300, 150 and 71 px).
+    global W, H
+    saved = (W, H)
+    W, H = size, size
+    bg = background()
+    W, H = saved
+    k = int(size * 0.86)
+    logo = Image.open(os.path.join(DOCS, 'yappy-logo.png')).convert('RGBA').resize((k, k), Image.LANCZOS)
+    bg.alpha_composite(logo, ((size - k) // 2, (size - k) // 2))
+    bg.convert('RGB').save(os.path.join(OUT, 'tile-%d.png' % size))
+
+
 os.makedirs(OUT, exist_ok=True)
+for s in (300, 150, 71):
+    tile(s)
 logo_art('poster-9x16.png', 720, 1080)
 logo_art('boxart-1x1.png', 1080, 1080)
 window_shot('screenshot-1.png', 'welcome-light.png', 'Free voice typing\nfor Windows', 'Tap Right Ctrl, talk, tap it again.\nYour words land wherever\nyour cursor is.')
