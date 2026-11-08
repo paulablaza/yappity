@@ -719,7 +719,7 @@ namespace Yappity
             g4.Add(Group.Row("Keep recordings", keepHint, keep));
             g4.Add(Group.Row("Theme", themeHint, theme));
             g4.Add(InstallRow());
-            g4.Add(Group.Row("Start with Windows", K.Wrap("Yappity opens quietly in your tray when you sign in, so the shortcut always works.", 12.5, K.Muted), startup));
+            g4.Add(StartupRow());
             page.Children.Add(g4);
 
             var about = K.Wrap("Yappity " + App.Version + ". Your audio goes straight from your PC to Groq and nowhere else, and your key stays encrypted on this PC.", 12, K.Muted);
@@ -773,8 +773,23 @@ namespace Yappity
             return card;
         }
 
+        FrameworkElement StartupRow()
+        {
+            if (!StoreApp.IsPackaged)
+                return Group.Row("Start with Windows", K.Wrap("Yappity opens quietly in your tray when you sign in, so the shortcut always works.", 12.5, K.Muted), startup);
+            var button = new PillButton("Open", false);
+            button.Click += delegate
+            {
+                try { StoreApp.OpenStartupSettings(); }
+                catch (Exception ex) { Store.Log("Couldn't open startup settings: " + ex.Message); }
+            };
+            return Group.Row("Start with Windows", K.Wrap("Yappity opens quietly in your tray when you sign in, so the shortcut always works. Turn it on or off in Windows Settings > Apps > Startup.", 12.5, K.Muted), button);
+        }
+
         FrameworkElement InstallRow()
         {
+            if (StoreApp.IsPackaged)
+                return Group.Row("Installed from the Microsoft Store", K.Wrap("The Store keeps Yappity up to date. You can remove it any time from Windows Settings > Apps.", 12.5, K.Muted), null);
             if (Installer.IsInstalledCopy)
                 return Group.Row("Installed", K.Wrap("Yappity is installed in your user folder and shows up in the Start menu. You can remove it any time from Windows Settings > Apps.", 12.5, K.Muted), null);
             if (Store.IsPortable)
@@ -915,7 +930,8 @@ namespace Yappity
             keep.Value = s.KeepAudioDays.ToString();
             style.Value = s.Style;
             vocab.Text = s.Vocabulary;
-            try { startup.IsOn = Store.StartsWithWindows; } catch (Exception) { }
+            if (!StoreApp.IsPackaged)
+                try { startup.IsOn = Store.StartsWithWindows; } catch (Exception) { }
             Status(string.IsNullOrEmpty(s.ApiKey) ? "Your key gets encrypted and stays on this PC." : "", K.Muted);
             Hints();
             Usage();

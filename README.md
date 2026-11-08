@@ -169,7 +169,7 @@ Measured on Windows 11 with `tools/benchmark.ps1`. "Task Manager" is the Memory 
 Your audio goes from your PC straight to Groq and nowhere else. There's no account, no analytics and
 no server of mine in between. Your Groq key is encrypted with Windows DPAPI, so only your Windows
 account can read it. History and recordings stay on your PC in `%APPDATA%\Yappity`, and old
-recordings get deleted on their own.
+recordings get deleted on their own. The full version is in [PRIVACY.md](PRIVACY.md).
 
 ---
 

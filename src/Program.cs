@@ -34,6 +34,9 @@ namespace Yappity
                 File.WriteAllText(args[2], sb.ToString(), Encoding.UTF8);
                 return 0;
             }
+            // The Store copy is installed and removed by Windows, not by Yappity.
+            if (StoreApp.IsPackaged && args.Length >= 1 && (args[0] == "--install" || args[0] == "--uninstall"))
+                return 1;
             if (args.Length >= 1 && args[0] == "--uninstall")
                 return Installer.Uninstall();
             if (args.Length >= 1 && args[0] == "--install")

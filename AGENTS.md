@@ -23,6 +23,10 @@ The two promises that matter most:
 - UI is **WPF built in code** (no XAML). The tray icon uses WinForms `NotifyIcon`.
 - Build: `powershell -ExecutionPolicy Bypass -File build.ps1` writes `bin\Yappity.exe`.
   `build.ps1 -Out some\other.exe` builds to a different file, which helps when the real one is running.
+- Microsoft Store package: `powershell -ExecutionPolicy Bypass -File build-msix.ps1` writes
+  `bin\Yappity-<version>-x64.msix`, unsigned (the Store signs it). The first run downloads Microsoft's
+  packaging tools (about 22 MB) into `.tools\`. The version comes from `App.Version`. Bump it before
+  every Store upload, because the Store won't take the same version twice.
 
 Because the compiler is C# 5, these don't compile: `$"..."` string interpolation, `?.`, `nameof`,
 expression-bodied members (`=>` on methods or properties), `out var`, tuples, pattern matching,
@@ -44,7 +48,11 @@ auto-property initializers. Use `string.Format` or `+`, explicit null checks, an
 | `src/Store.cs` | Settings, history, saved recordings and the log in `%APPDATA%\Yappity` (or `YappityData` next to the exe in portable mode) |
 | `src/Installer.cs` | Install to `%LOCALAPPDATA%\Programs\Yappity`, Start menu, Installed apps entry, `--uninstall` |
 | `src/Ui.cs` | Light/dark detection and the tray menu colors |
+| `src/StoreApp.cs` | Knows when it's the Microsoft Store copy. Then Windows handles install, uninstall and start with Windows, so `Installer.cs` and the Run key stay out of it |
+| `packaging/AppxManifest.xml` | Store package manifest: identity from Partner Center, mic and full trust, the startup task |
+| `packaging/store/` | Store listing text (`listing.md`) and the 1920x1080 Store screenshots |
 | `tools/make-art.py` | Turns the art in `design/` into `assets/` (needs Pillow) |
+| `tools/make-store-shots.py` | Makes the Store screenshots in `packaging/store/` from the ones in `docs/` (needs Pillow) |
 
 ## Rules
 

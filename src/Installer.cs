@@ -82,6 +82,7 @@ namespace Yappity
         public static void EnsureStartMenu()
         {
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("YAPPITY_HOME"))) return;
+            if (StoreApp.IsPackaged) return; // the Store adds its own Start menu entry
             try
             {
                 if (IsInstalledCopy || !File.Exists(StartMenuLink)) Shortcut(StartMenuLink, Exe);
