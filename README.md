@@ -17,6 +17,12 @@
   <img src="https://img.shields.io/badge/license-MIT-8b7fff" alt="MIT license">
 </p>
 
+<p align="center">
+  <a href="https://apps.microsoft.com/detail/9N53CJD8P2B4"><b>Get Yappity on the Microsoft Store</b></a>
+  &nbsp;|&nbsp;
+  <a href="https://github.com/paulablaza/yappity/releases">Download the portable .exe</a>
+</p>
+
 ---
 
 ## Why I made this
@@ -90,9 +96,10 @@ sentences, never answers a question you dictate, never translates, and never use
 
 ## Get started
 
-1. Download `Yappity.exe` from [Releases](../../releases) and run it.
-2. Windows will probably say it doesn't recognize the app, because it isn't code signed yet. Click
-   **More info**, then **Run anyway**. The code is all here if you want to check it first.
+1. Install Yappity from the [Microsoft Store](https://apps.microsoft.com/detail/9N53CJD8P2B4), or download
+   the portable `Yappity.exe` from [Releases](../../releases).
+2. If you use the standalone `.exe`, Windows might warn you because it isn't code signed yet.
+   Click **More info**, then **Run anyway** if you trust this download. The source code is here to inspect.
 3. Grab a free key at [console.groq.com/keys](https://console.groq.com/keys). It takes about a minute.
 4. Paste the key in Settings and press **Test**.
 5. Click into any text box, tap <kbd>Right Ctrl</kbd>, say something, and tap it again.
