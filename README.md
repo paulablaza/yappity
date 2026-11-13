@@ -21,6 +21,8 @@
   <a href="https://apps.microsoft.com/detail/9N53CJD8P2B4"><b>Get Yappity on the Microsoft Store</b></a>
   &nbsp;|&nbsp;
   <a href="https://github.com/paulablaza/yappity/releases">Download the portable .exe</a>
+  <br>
+  <a href="https://yappity.pages.dev"><b>yappity.pages.dev</b></a> · Also on Android: <a href="https://github.com/paulablaza/yappity-mobile">Yappity for Android</a>
 </p>
 
 ---
